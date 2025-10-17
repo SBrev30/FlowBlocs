@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Notion Infinite Canvas",
+  "version": "1.0.0",
+  "description": "Transform your structured Notion databases into visual canvases for intuitive brainstorming and spatial organization",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://api.notion.com/*"
+  ],
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

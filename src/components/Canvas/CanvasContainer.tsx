@@ -1,0 +1,192 @@
+import { useCallback, useEffect, useState } from 'react';
+import ReactFlow, {
+  Node,
+  Edge,
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  Connection,
+  BackgroundVariant,
+  Panel,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+import { NotionPage } from '../../lib/notion-api';
+import { saveCanvasState, getCanvasState } from '../../lib/storage';
+import NotionNode from './NotionNode';
+import { Moon, Sun, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import './Canvas.css';
+
+const nodeTypes = {
+  notionNode: NotionNode,
+};
+
+interface CanvasContainerProps {
+  onDrop: (page: NotionPage, position: { x: number; y: number }) => void;
+}
+
+const CanvasContainer = ({ onDrop }: CanvasContainerProps) => {
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    loadCanvasState();
+    loadThemePreference();
+  }, []);
+
+  useEffect(() => {
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      saveCanvas();
+    }, 2000);
+
+    setSaveTimeout(timeout);
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [nodes, edges]);
+
+  const loadCanvasState = async () => {
+    const state = await getCanvasState();
+    if (state) {
+      setNodes(state.nodes || []);
+      setEdges(state.edges || []);
+      if (state.viewport && reactFlowInstance) {
+        reactFlowInstance.setViewport(state.viewport);
+      }
+    }
+  };
+
+  const loadThemePreference = () => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+  };
+
+  const saveCanvas = async () => {
+    const viewport = reactFlowInstance?.getViewport();
+    await saveCanvasState({
+      nodes,
+      edges,
+      viewport,
+    });
+  };
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges]
+  );
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  const onDropHandler = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const pageData = event.dataTransfer.getData('application/notion-page');
+      if (!pageData || !reactFlowInstance) return;
+
+      const page: NotionPage = JSON.parse(pageData);
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      const newNode: Node = {
+        id: `${page.id}-${Date.now()}`,
+        type: 'notionNode',
+        position,
+        data: {
+          page,
+          expanded: false,
+        },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+      onDrop(page, position);
+    },
+    [reactFlowInstance, onDrop, setNodes]
+  );
+
+  const handleZoomIn = () => {
+    reactFlowInstance?.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    reactFlowInstance?.zoomOut();
+  };
+
+  const handleFitView = () => {
+    reactFlowInstance?.fitView({ padding: 0.2 });
+  };
+
+  return (
+    <div className="canvas-container">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onInit={setReactFlowInstance}
+        onDrop={onDropHandler}
+        onDragOver={onDragOver}
+        nodeTypes={nodeTypes}
+        fitView
+        minZoom={0.1}
+        maxZoom={2}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+      >
+        <Background
+          color={theme === 'dark' ? '#ffffff1a' : '#00000014'}
+          gap={16}
+          variant={BackgroundVariant.Dots}
+        />
+        <Controls showInteractive={false} />
+        <MiniMap
+          nodeColor={theme === 'dark' ? '#3f3f3f' : '#d9d9d7'}
+          maskColor={theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.1)'}
+        />
+
+        <Panel position="top-right" className="canvas-toolbar">
+          <button className="toolbar-button" onClick={toggleTheme} title="Toggle theme">
+            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+          <div className="toolbar-divider" />
+          <button className="toolbar-button" onClick={handleZoomIn} title="Zoom in">
+            <ZoomIn size={18} />
+          </button>
+          <button className="toolbar-button" onClick={handleZoomOut} title="Zoom out">
+            <ZoomOut size={18} />
+          </button>
+          <button className="toolbar-button" onClick={handleFitView} title="Fit view">
+            <Maximize2 size={18} />
+          </button>
+        </Panel>
+      </ReactFlow>
+    </div>
+  );
+};
+
+export default CanvasContainer;

@@ -1,0 +1,230 @@
+.canvas-container {
+  flex: 1;
+  height: 100vh;
+  background-color: var(--canvas-bg);
+}
+
+.react-flow {
+  background-color: var(--canvas-bg);
+}
+
+.react-flow__node {
+  cursor: pointer;
+}
+
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent-primary);
+  border: 2px solid var(--node-bg);
+  border-radius: 50%;
+}
+
+.react-flow__edge-path {
+  stroke: var(--border-strong);
+  stroke-width: 2px;
+}
+
+.react-flow__controls {
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-default);
+}
+
+.react-flow__controls-button {
+  background-color: var(--button-bg);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.react-flow__minimap {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.toolbar-button:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border-subtle);
+}
+
+.notion-node {
+  background-color: var(--node-bg);
+  border: 2px solid var(--node-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.notion-node.collapsed {
+  width: 240px;
+  min-height: 80px;
+}
+
+.notion-node.expanded {
+  width: 400px;
+  min-height: 300px;
+}
+
+.notion-node:hover {
+  border-color: var(--node-hover-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.notion-node.selected {
+  border-color: var(--node-selected-border);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+}
+
+.node-cover {
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+}
+
+.node-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.node-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.node-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.node-emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.node-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.node-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.node-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.node-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.node-action-button:hover {
+  background-color: var(--button-hover-bg);
+  color: var(--text-primary);
+}
+
+.node-content {
+  padding: var(--spacing-md);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.node-content-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.placeholder-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.placeholder-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.node-handle {
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.notion-node:hover .node-handle {
+  opacity: 1;
+}
+
+.react-flow__node.dragging .notion-node {
+  cursor: grabbing;
+  opacity: 0.8;
+}
