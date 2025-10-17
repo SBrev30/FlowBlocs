@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Database, ChevronRight, ChevronDown, Loader2, PanelLeftClose } from "lucide-react";
+import { Database, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
+import { GoSidebarCollapse } from "react-icons/go";
 import { searchDatabases, queryDatabase, getCurrentUser } from "../../lib/notion-api";
 import { getAuthToken } from "../../lib/storage";
 import AuthSection from "./AuthSection";
@@ -111,12 +112,12 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
   if (isCollapsed) {
     return (
       <div className="sidebar collapsed">
-        <button 
+        <button
           className="collapse-btn"
           onClick={onToggle}
           title="Expand sidebar"
         >
-          <PanelLeftClose size={20} />
+          <GoSidebarCollapse size={20} style={{ transform: 'rotate(180deg)' }} />
         </button>
       </div>
     );
@@ -126,12 +127,12 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
     <div className="sidebar">
       <div className="sidebar-header">
         <h2>FlowBlocs</h2>
-        <button 
+        <button
           className="collapse-btn"
           onClick={onToggle}
           title="Collapse sidebar"
         >
-          <PanelLeftClose size={20} />
+          <GoSidebarCollapse size={20} />
         </button>
       </div>
 
