@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Notion Infinite Canvas",
+  "name": "FlowBlocs",
   "version": "1.0.0",
   "description": "Transform your structured Notion databases into visual canvases for intuitive brainstorming and spatial organization",
   "permissions": [

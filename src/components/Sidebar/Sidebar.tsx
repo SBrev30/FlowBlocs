@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Database, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import { GoSidebarCollapse } from 'react-icons/go';
 import { searchDatabases, queryDatabase, getCurrentUser, NotionDatabase, NotionPage } from '../../lib/notion-api';
 import { getAuthToken } from '../../lib/storage';
 import AuthSection from './AuthSection';
@@ -9,7 +10,13 @@ interface SidebarProps {
   onPageDragStart: (page: NotionPage) => void;
 }
 
-const Sidebar = ({ onPageDragStart }: SidebarProps) => {
+interface SidebarContainerProps {
+  onPageDragStart: (page: NotionPage) => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+}
+
+const SidebarContent = ({ onPageDragStart }: SidebarProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [databases, setDatabases] = useState<NotionDatabase[]>([]);
@@ -100,7 +107,7 @@ const Sidebar = ({ onPageDragStart }: SidebarProps) => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h1 className="sidebar-title">Notion Canvas</h1>
+        <h1 className="sidebar-title">FlowBlocs</h1>
       </div>
 
       <AuthSection
@@ -167,6 +174,24 @@ const Sidebar = ({ onPageDragStart }: SidebarProps) => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const Sidebar = ({ onPageDragStart, isCollapsed, onToggleCollapse }: SidebarContainerProps) => {
+  return (
+    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+      <button
+        className="sidebar-collapse-btn"
+        onClick={onToggleCollapse}
+        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        <GoSidebarCollapse
+          size={20}
+          style={{ transform: isCollapsed ? 'rotate(180deg)' : 'none' }}
+        />
+      </button>
+      {!isCollapsed && <SidebarContent onPageDragStart={onPageDragStart} />}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-# Notion Infinite Canvas
+# FlowBlocs
 
 Transform your structured Notion databases into visual canvases for intuitive brainstorming and spatial organization.
 
@@ -17,7 +17,7 @@ Transform your structured Notion databases into visual canvases for intuitive br
 
 1. Go to [Notion Integrations](https://www.notion.so/my-integrations)
 2. Click "New integration"
-3. Name it "Notion Infinite Canvas"
+3. Name it "FlowBlocs"
 4. Select "Internal" for development (or "Public" for distribution)
 5. Enable these capabilities:
    - Read content
