@@ -4,7 +4,6 @@ import ReactFlow, {
   Edge,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   addEdge,
@@ -164,10 +163,6 @@ const CanvasContainer = ({ onDrop }: CanvasContainerProps) => {
           variant={BackgroundVariant.Dots}
         />
         <Controls showInteractive={false} />
-        <MiniMap
-          nodeColor={theme === 'dark' ? '#3f3f3f' : '#d9d9d7'}
-          maskColor={theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.1)'}
-        />
 
         <Panel position="top-right" className="canvas-toolbar">
           <button className="toolbar-button" onClick={toggleTheme} title="Toggle theme">
