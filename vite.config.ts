@@ -1,26 +1,30 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
+import { copyFileSync } from 'fs'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  optimizeDeps: {
-    exclude: ['lucide-react'],
-  },
+  plugins: [
+    react(),
+    {
+      name: 'copy-extension-files',
+      closeBundle() {
+        // Copy manifest.json to dist
+        copyFileSync('manifest.json', 'dist/manifest.json')
+        
+        // Copy background.js to dist
+        copyFileSync('background.js', 'dist/background.js')
+        
+        console.log('✅ Copied extension files to dist/')
+      }
+    }
+  ],
   build: {
     outDir: 'dist',
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-      },
-      output: {
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]'
+        main: resolve(__dirname, 'index.html')
       }
-    },
-    copyPublicDir: true
-  },
-  publicDir: 'public'
-});
+    }
+  }
+})
