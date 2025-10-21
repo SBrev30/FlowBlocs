@@ -102,10 +102,7 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
 
   const handleDragStart = (e: React.DragEvent, page: NotionPage, databaseId: string) => {
     e.dataTransfer.effectAllowed = "copy";
-    e.dataTransfer.setData("application/json", JSON.stringify({
-      page,
-      databaseId
-    }));
+    e.dataTransfer.setData("application/notion-page", JSON.stringify(page));
     onDragStart(page, databaseId);
   };
 
