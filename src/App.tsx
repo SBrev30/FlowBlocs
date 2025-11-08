@@ -2,26 +2,12 @@ import { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
 import CanvasContainer from './components/Canvas/CanvasContainer';
 import { NotionPage } from './lib/notion-api';
-import { handleAuthCallback } from './lib/auth';
 
 function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-
-    if (code) {
-      handleAuthCallback(code)
-        .then(() => {
-          window.history.replaceState({}, document.title, window.location.pathname);
-          window.location.reload();
-        })
-        .catch((error) => {
-          console.error('Authentication failed:', error);
-        });
-    }
-
+    // Load sidebar collapsed state from localStorage
     const savedCollapsed = localStorage.getItem('sidebarCollapsed');
     if (savedCollapsed !== null) {
       setIsSidebarCollapsed(savedCollapsed === 'true');
