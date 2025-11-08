@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
-import { copyFileSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync } from 'fs'
 
 export default defineConfig({
   plugins: [
@@ -9,13 +9,27 @@ export default defineConfig({
     {
       name: 'copy-extension-files',
       closeBundle() {
-        // Copy manifest.json to dist
-        copyFileSync('manifest.json', 'dist/manifest.json')
+        // Ensure dist directory exists
+        if (!existsSync('dist')) {
+          mkdirSync('dist', { recursive: true })
+          console.log('📁 Created dist directory')
+        }
         
-        // Copy background.js to dist
-        copyFileSync('background.js', 'dist/background.js')
+        // Check and copy manifest.json
+        if (existsSync('manifest.json')) {
+          copyFileSync('manifest.json', 'dist/manifest.json')
+          console.log('✅ Copied manifest.json to dist/')
+        } else {
+          console.warn('⚠️  manifest.json not found in root directory')
+        }
         
-        console.log('✅ Copied extension files to dist/')
+        // Check and copy background.js
+        if (existsSync('background.js')) {
+          copyFileSync('background.js', 'dist/background.js')
+          console.log('✅ Copied background.js to dist/')
+        } else {
+          console.warn('⚠️  background.js not found in root directory')
+        }
       }
     }
   ],
