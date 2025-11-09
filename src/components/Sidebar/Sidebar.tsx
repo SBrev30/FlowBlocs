@@ -84,10 +84,10 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
       if (!databasePages[databaseId]) {
         setLoadingPages(new Set(loadingPages).add(databaseId));
         try {
-          const pages = await queryDatabase(databaseId);
+          const response = await queryDatabase(databaseId);
           setDatabasePages(prev => ({
             ...prev,
-            [databaseId]: pages
+            [databaseId]: response.results
           }));
         } catch (error) {
           console.error("Failed to load database pages:", error);
