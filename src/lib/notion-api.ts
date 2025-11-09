@@ -6,33 +6,13 @@ const NOTION_VERSION = '2022-06-28';
 export interface NotionDatabase {
   id: string;
   title: string;
-  icon?: {
-    type: string;
-    emoji?: string;
-    file?: { url: string };
-    external?: { url: string };
-  };
-  cover?: {
-    type: string;
-    file?: { url: string };
-    external?: { url: string };
-  };
+  icon?: string;
 }
 
 export interface NotionPage {
   id: string;
   title: string;
-  icon?: {
-    type: string;
-    emoji?: string;
-    file?: { url: string };
-    external?: { url: string };
-  };
-  cover?: {
-    type: string;
-    file?: { url: string };
-    external?: { url: string };
-  };
+  icon?: string;
   properties: Record<string, any>;
   url: string;
 }
@@ -42,6 +22,14 @@ export interface NotionBlock {
   type: string;
   [key: string]: any;
 }
+
+const extractIcon = (icon: any): string | undefined => {
+  if (!icon) return undefined;
+  if (icon.type === 'emoji') return icon.emoji;
+  if (icon.type === 'external' && icon.external?.url) return '🔗';
+  if (icon.type === 'file' && icon.file?.url) return '📄';
+  return undefined;
+};
 
 const makeNotionRequest = async (
   endpoint: string,
@@ -93,8 +81,7 @@ export const searchDatabases = async (): Promise<NotionDatabase[]> => {
   return response.results.map((db: any) => ({
     id: db.id,
     title: db.title?.[0]?.plain_text || 'Untitled',
-    icon: db.icon,
-    cover: db.cover,
+    icon: extractIcon(db.icon),
   }));
 };
 
@@ -123,8 +110,7 @@ export const queryDatabase = async (
     return {
       id: page.id,
       title: titleProperty?.title?.[0]?.plain_text || 'Untitled',
-      icon: page.icon,
-      cover: page.cover,
+      icon: extractIcon(page.icon),
       properties: page.properties,
       url: page.url,
     };
