@@ -3,10 +3,11 @@ import { handleOAuthCallback } from '../lib/auth';
 
 interface AuthCallbackProps {
   onSuccess: () => void;
+  onError: () => void;
 }
 
-export const AuthCallback = ({ onSuccess }: AuthCallbackProps) => {
-  const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
+export const AuthCallback = ({ onSuccess, onError }: AuthCallbackProps) => {
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
@@ -15,7 +16,7 @@ export const AuthCallback = ({ onSuccess }: AuthCallbackProps) => {
       
       if (result.success) {
         setStatus('success');
-        // Give user a moment to see success message
+        // Wait 1 second then call success callback
         setTimeout(() => {
           onSuccess();
         }, 1000);
@@ -29,64 +30,77 @@ export const AuthCallback = ({ onSuccess }: AuthCallbackProps) => {
   }, [onSuccess]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
-        {status === 'processing' && (
-          <>
-            <div className="flex justify-center mb-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-            <h2 className="text-xl font-semibold text-center text-gray-800">
-              Completing authentication...
-            </h2>
-            <p className="text-center text-gray-600 mt-2">
-              Please wait while we connect your Notion account.
-            </p>
-          </>
-        )}
-
-        {status === 'success' && (
-          <>
-            <div className="flex justify-center mb-4">
-              <div className="rounded-full h-12 w-12 bg-green-100 flex items-center justify-center">
-                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </div>
-            <h2 className="text-xl font-semibold text-center text-gray-800">
-              Authentication successful!
-            </h2>
-            <p className="text-center text-gray-600 mt-2">
-              Redirecting to your canvas...
-            </p>
-          </>
-        )}
-
-        {status === 'error' && (
-          <>
-            <div className="flex justify-center mb-4">
-              <div className="rounded-full h-12 w-12 bg-red-100 flex items-center justify-center">
-                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-            </div>
-            <h2 className="text-xl font-semibold text-center text-gray-800">
-              Authentication failed
-            </h2>
-            <p className="text-center text-red-600 mt-2 text-sm">
-              {error}
-            </p>
-            <button
-              onClick={() => window.location.href = '/'}
-              className="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
-            >
-              Return to home
-            </button>
-          </>
-        )}
-      </div>
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100vh',
+      flexDirection: 'column',
+      gap: '1rem',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      {status === 'loading' && (
+        <>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+          <p style={{ fontSize: '1.1rem', color: '#666' }}>
+            Completing authentication...
+          </p>
+        </>
+      )}
+      
+      {status === 'success' && (
+        <>
+          <div style={{ 
+            fontSize: '3rem', 
+            color: '#10b981',
+            marginBottom: '0.5rem'
+          }}>
+            ✓
+          </div>
+          <p style={{ fontSize: '1.1rem', color: '#10b981', fontWeight: 500 }}>
+            Authentication successful!
+          </p>
+          <p style={{ fontSize: '0.9rem', color: '#666' }}>
+            Redirecting to your canvas...
+          </p>
+        </>
+      )}
+      
+      {status === 'error' && (
+        <>
+          <div style={{ 
+            fontSize: '3rem', 
+            color: '#ef4444',
+            marginBottom: '0.5rem'
+          }}>
+            ✗
+          </div>
+          <p style={{ fontSize: '1.1rem', color: '#ef4444', fontWeight: 500 }}>
+            Authentication failed
+          </p>
+          <p style={{ fontSize: '0.9rem', color: '#666', maxWidth: '400px', textAlign: 'center' }}>
+            {error}
+          </p>
+          <button 
+            onClick={onError}
+            style={{
+              marginTop: '1rem',
+              padding: '0.5rem 1.5rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 500
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+          >
+            Return to app
+          </button>
+        </>
+      )}
     </div>
   );
 };
