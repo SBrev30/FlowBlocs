@@ -1,41 +1,56 @@
 import { useEffect, useState } from 'react';
-import Sidebar from './components/Sidebar/Sidebar';
-import CanvasContainer from './components/Canvas/CanvasContainer';
-import { NotionPage } from './lib/notion-api';
+import { Sidebar } from './components/Sidebar';
+import { Canvas } from './components/Canvas';
+import { AuthCallback } from './components/AuthCallback';
+import { checkAuthStatus } from './lib/auth';
+import './styles/App.css';
 
 function App() {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCallback, setIsCallback] = useState(false);
 
   useEffect(() => {
-    // Load sidebar collapsed state from localStorage
-    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
-    if (savedCollapsed !== null) {
-      setIsSidebarCollapsed(savedCollapsed === 'true');
+    // Check if this is an OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('code')) {
+      setIsCallback(true);
+      setIsLoading(false);
+      return;
     }
+
+    // Check authentication status
+    const checkAuth = async () => {
+      const status = await checkAuthStatus();
+      setIsAuthenticated(status.isAuthenticated);
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
-  const handlePageDragStart = (page: NotionPage) => {
-    console.log('Drag started:', page.title);
+  const handleAuthSuccess = () => {
+    setIsCallback(false);
+    setIsAuthenticated(true);
   };
 
-  const handlePageDrop = (page: NotionPage, position: { x: number; y: number }) => {
-    console.log('Page dropped:', page.title, 'at position:', position);
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
-  const toggleSidebar = () => {
-    const newCollapsed = !isSidebarCollapsed;
-    setIsSidebarCollapsed(newCollapsed);
-    localStorage.setItem('sidebarCollapsed', String(newCollapsed));
-  };
+  // Show callback handler if this is OAuth redirect
+  if (isCallback) {
+    return <AuthCallback onSuccess={handleAuthSuccess} />;
+  }
 
   return (
-    <div className="app-container">
-      <Sidebar
-        onPageDragStart={handlePageDragStart}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
-      />
-      <CanvasContainer onDrop={handlePageDrop} />
+    <div className="flex h-screen">
+      <Sidebar isAuthenticated={isAuthenticated} onAuthChange={setIsAuthenticated} />
+      <Canvas />
     </div>
   );
 }

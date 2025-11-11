@@ -13,9 +13,10 @@ export interface CanvasState {
   };
 }
 
+// Web app storage using localStorage instead of chrome.storage
 export const saveAuthToken = async (token: string): Promise<void> => {
   try {
-    await chrome.storage.sync.set({ [AUTH_TOKEN_KEY]: token });
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
   } catch (error) {
     console.error('Error saving auth token:', error);
     throw error;
@@ -24,8 +25,7 @@ export const saveAuthToken = async (token: string): Promise<void> => {
 
 export const getAuthToken = async (): Promise<string | null> => {
   try {
-    const result = await chrome.storage.sync.get([AUTH_TOKEN_KEY]);
-    return result[AUTH_TOKEN_KEY] || null;
+    return localStorage.getItem(AUTH_TOKEN_KEY);
   } catch (error) {
     console.error('Error getting auth token:', error);
     return null;
@@ -34,7 +34,7 @@ export const getAuthToken = async (): Promise<string | null> => {
 
 export const removeAuthToken = async (): Promise<void> => {
   try {
-    await chrome.storage.sync.remove([AUTH_TOKEN_KEY]);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
   } catch (error) {
     console.error('Error removing auth token:', error);
     throw error;
@@ -43,7 +43,7 @@ export const removeAuthToken = async (): Promise<void> => {
 
 export const saveCanvasState = async (state: CanvasState): Promise<void> => {
   try {
-    await chrome.storage.local.set({ [CANVAS_STATE_KEY]: state });
+    localStorage.setItem(CANVAS_STATE_KEY, JSON.stringify(state));
   } catch (error) {
     console.error('Error saving canvas state:', error);
     throw error;
@@ -52,8 +52,8 @@ export const saveCanvasState = async (state: CanvasState): Promise<void> => {
 
 export const getCanvasState = async (): Promise<CanvasState | null> => {
   try {
-    const result = await chrome.storage.local.get([CANVAS_STATE_KEY]);
-    return result[CANVAS_STATE_KEY] || null;
+    const stateStr = localStorage.getItem(CANVAS_STATE_KEY);
+    return stateStr ? JSON.parse(stateStr) : null;
   } catch (error) {
     console.error('Error getting canvas state:', error);
     return null;
@@ -62,7 +62,7 @@ export const getCanvasState = async (): Promise<CanvasState | null> => {
 
 export const clearCanvasState = async (): Promise<void> => {
   try {
-    await chrome.storage.local.remove([CANVAS_STATE_KEY]);
+    localStorage.removeItem(CANVAS_STATE_KEY);
   } catch (error) {
     console.error('Error clearing canvas state:', error);
     throw error;
