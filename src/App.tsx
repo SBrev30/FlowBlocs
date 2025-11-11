@@ -13,7 +13,7 @@ function App() {
   useEffect(() => {
     // Check if this is an OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('code')) {
+    if (urlParams.has('code') || urlParams.has('error')) {
       setIsCallback(true);
       setIsLoading(false);
       return;
@@ -30,8 +30,16 @@ function App() {
   }, []);
 
   const handleAuthSuccess = () => {
+    // Clear URL parameters
+    window.history.replaceState({}, document.title, window.location.pathname);
     setIsCallback(false);
     setIsAuthenticated(true);
+  };
+
+  const handleAuthError = () => {
+    // Clear URL parameters and return to main view
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setIsCallback(false);
   };
 
   if (isLoading) {
@@ -44,12 +52,20 @@ function App() {
 
   // Show callback handler if this is OAuth redirect
   if (isCallback) {
-    return <AuthCallback onSuccess={handleAuthSuccess} />;
+    return (
+      <AuthCallback 
+        onSuccess={handleAuthSuccess} 
+        onError={handleAuthError}
+      />
+    );
   }
 
   return (
     <div className="flex h-screen">
-      <Sidebar isAuthenticated={isAuthenticated} onAuthChange={setIsAuthenticated} />
+      <Sidebar 
+        isAuthenticated={isAuthenticated} 
+        onAuthChange={setIsAuthenticated} 
+      />
       <Canvas />
     </div>
   );
