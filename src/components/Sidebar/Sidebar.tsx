@@ -1,22 +1,10 @@
 import { useState, useEffect } from "react";
 import { Database, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { GoSidebarCollapse } from "react-icons/go";
-import { searchDatabases, queryDatabase, getCurrentUser } from "../../lib/notion-api";
+import { searchDatabases, queryDatabase, getCurrentUser, NotionPage, NotionDatabase } from "../../lib/notion-api";
 import { getAuthToken } from "../../lib/storage";
 import AuthSection from "./AuthSection";
 import "./Sidebar.css";
-
-interface NotionDatabase {
-  id: string;
-  title: string;
-  icon?: string;
-}
-
-interface NotionPage {
-  id: string;
-  title: string;
-  icon?: string;
-}
 
 interface SidebarProps {
   isCollapsed: boolean;

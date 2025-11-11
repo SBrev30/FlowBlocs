@@ -13,6 +13,7 @@ export interface NotionPage {
   id: string;
   title: string;
   icon?: string;
+  cover?: any;
   properties: Record<string, any>;
   url: string;
 }
@@ -111,6 +112,7 @@ export const queryDatabase = async (
       id: page.id,
       title: titleProperty?.title?.[0]?.plain_text || 'Untitled',
       icon: extractIcon(page.icon),
+      cover: page.cover,
       properties: page.properties,
       url: page.url,
     };

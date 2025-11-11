@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
 import Canvas from './components/Canvas/CanvasContainer';
-import AuthCallback from './components/AuthCallback';
+import { AuthCallback } from './components/AuthCallback';
 import { checkAuthStatus } from './lib/auth';
 import './styles/variables.css';
 
+interface NotionPage {
+  id: string;
+  title: string;
+  icon?: string;
+}
+
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCallback, setIsCallback] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    // Check if this is an OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('code') || urlParams.has('error')) {
       setIsCallback(true);
@@ -19,10 +24,8 @@ function App() {
       return;
     }
 
-    // Check authentication status
     const checkAuth = async () => {
-      const status = await checkAuthStatus();
-      setIsAuthenticated(status.isAuthenticated);
+      await checkAuthStatus();
       setIsLoading(false);
     };
 
@@ -30,16 +33,25 @@ function App() {
   }, []);
 
   const handleAuthSuccess = () => {
-    // Clear URL parameters
     window.history.replaceState({}, document.title, window.location.pathname);
     setIsCallback(false);
-    setIsAuthenticated(true);
   };
 
   const handleAuthError = () => {
-    // Clear URL parameters and return to main view
     window.history.replaceState({}, document.title, window.location.pathname);
     setIsCallback(false);
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const handleDragStart = (page: NotionPage, databaseId: string) => {
+    console.log('Drag started:', page.title, 'from database:', databaseId);
+  };
+
+  const handleDrop = (page: NotionPage, position: { x: number; y: number }) => {
+    console.log('Page dropped:', page.title, 'at position:', position);
   };
 
   if (isLoading) {
@@ -50,11 +62,10 @@ function App() {
     );
   }
 
-  // Show callback handler if this is OAuth redirect
   if (isCallback) {
     return (
-      <AuthCallback 
-        onSuccess={handleAuthSuccess} 
+      <AuthCallback
+        onSuccess={handleAuthSuccess}
         onError={handleAuthError}
       />
     );
@@ -62,11 +73,12 @@ function App() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar 
-        isAuthenticated={isAuthenticated} 
-        onAuthChange={setIsAuthenticated} 
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        onToggle={toggleSidebar}
+        onDragStart={handleDragStart}
       />
-      <Canvas />
+      <Canvas onDrop={handleDrop} />
     </div>
   );
 }
