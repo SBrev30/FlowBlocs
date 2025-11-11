@@ -47,8 +47,8 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         grant_type: "authorization_code",
-        code,
-        redirect_uri,
+  code: codeFromQuery,                     // the 'code' from the OAuth redirect
+  redirect_uri: "https://flowblocs-imported-f-jn8x.bolt.host",
         client_id: clientId,
         client_secret: clientSecret
       })
