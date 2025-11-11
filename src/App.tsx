@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Sidebar } from './components/Sidebar';
-import { Canvas } from './components/Canvas';
-import { AuthCallback } from './components/AuthCallback';
+import Sidebar from './components/Sidebar';
+import Canvas from './components/Canvas';
+import AuthCallback from './components/AuthCallback';
 import { checkAuthStatus } from './lib/auth';
 import './styles/App.css';
 
