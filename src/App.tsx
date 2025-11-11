@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar/Sidebar';
 import Canvas from './components/Canvas/CanvasContainer';
 import AuthCallback from './components/AuthCallback';
 import { checkAuthStatus } from './lib/auth';
-import './styles/App.css';
+import './styles/variables.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
