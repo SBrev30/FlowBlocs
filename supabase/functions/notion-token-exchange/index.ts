@@ -39,18 +39,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Exchange code for access token (correct Notion method)
+    // Exchange code for access token using HTTP Basic Auth
+    // Notion requires credentials in Authorization header as Basic auth
+    const credentials = btoa(`${clientId}:${clientSecret}`);
+
     const tokenResponse = await fetch("https://api.notion.com/v1/oauth/token", {
       method: "POST",
       headers: {
+        "Authorization": `Basic ${credentials}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         grant_type: "authorization_code",
-  code: codeFromQuery,                     // the 'code' from the OAuth redirect
-  redirect_uri: "https://flowblocs-imported-f-jn8x.bolt.host",
-        client_id: clientId,
-        client_secret: clientSecret
+        code: code,
+        redirect_uri: redirect_uri
       })
     });
 
