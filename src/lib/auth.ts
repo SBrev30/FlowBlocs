@@ -2,6 +2,7 @@ import { saveAuthToken, removeAuthToken, getAuthToken } from './storage';
 
 const NOTION_CLIENT_ID = import.meta.env.VITE_NOTION_CLIENT_ID || '';
 const BACKEND_TOKEN_ENDPOINT = import.meta.env.VITE_BACKEND_TOKEN_ENDPOINT || '';
+const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI || '';
 
 export interface NotionUser {
   id: string;
@@ -17,76 +18,57 @@ export interface AuthResult {
 }
 
 /**
- * Get the Chrome extension redirect URI
+ * Initiate Notion OAuth flow for web app
  */
-const getRedirectURI = (): string => {
-  return chrome.identity.getRedirectURL('oauth2callback');
-};
-
-/**
- * Initiate Notion OAuth flow using Chrome Identity API
- */
-export const initiateNotionAuth = async (): Promise<AuthResult> => {
+export const initiateNotionAuth = async (): Promise<void> => {
   try {
     // Validate configuration
     if (!NOTION_CLIENT_ID) {
       throw new Error('Notion Client ID not configured. Check your .env file.');
     }
 
-    if (!BACKEND_TOKEN_ENDPOINT) {
-      throw new Error('Backend token endpoint not configured. Check your .env file.');
+    if (!REDIRECT_URI) {
+      throw new Error('Redirect URI not configured. Check your .env file.');
     }
 
-    const redirectUri = getRedirectURI();
     console.log('[Auth] Starting OAuth flow');
-    console.log('[Auth] Redirect URI:', redirectUri);
+    console.log('[Auth] Redirect URI:', REDIRECT_URI);
     console.log('[Auth] Client ID:', NOTION_CLIENT_ID);
 
     // Build authorization URL
     const authUrl = new URL('https://api.notion.com/v1/oauth/authorize');
     authUrl.searchParams.set('client_id', NOTION_CLIENT_ID);
-    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('owner', 'user');
 
-    console.log('[Auth] Authorization URL:', authUrl.toString());
+    console.log('[Auth] Redirecting to Notion authorization...');
 
-    // Launch OAuth flow in popup
-    const redirectUrl = await new Promise<string>((resolve, reject) => {
-      chrome.identity.launchWebAuthFlow(
-        {
-          url: authUrl.toString(),
-          interactive: true
-        },
-        (responseUrl) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
-            return;
-          }
+    // Redirect to Notion authorization page
+    window.location.href = authUrl.toString();
 
-          if (!responseUrl) {
-            reject(new Error('No response from Notion'));
-            return;
-          }
+  } catch (error) {
+    console.error('[Auth] Failed to initiate authentication:', error);
+    throw error;
+  }
+};
 
-          resolve(responseUrl);
-        }
-      );
-    });
-
-    console.log('[Auth] Got redirect URL:', redirectUrl);
-
-    // Extract authorization code
-    const url = new URL(redirectUrl);
-    const code = url.searchParams.get('code');
-    const error = url.searchParams.get('error');
+/**
+ * Handle OAuth callback and exchange code for token
+ */
+export const handleOAuthCallback = async (): Promise<AuthResult> => {
+  try {
+    // Get code from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const error = urlParams.get('error');
 
     if (error) {
       throw new Error(`OAuth error: ${error}`);
     }
 
     if (!code) {
-      throw new Error('No authorization code received');
+      return { success: false, error: 'No authorization code received' };
     }
 
     console.log('[Auth] Got authorization code, exchanging for token...');
@@ -99,7 +81,7 @@ export const initiateNotionAuth = async (): Promise<AuthResult> => {
       },
       body: JSON.stringify({
         code,
-        redirect_uri: redirectUri,
+        redirect_uri: REDIRECT_URI,
       }),
     });
 
@@ -121,6 +103,9 @@ export const initiateNotionAuth = async (): Promise<AuthResult> => {
     await saveAuthToken(accessToken);
 
     console.log('[Auth] Authentication complete!');
+
+    // Clean up URL (remove code parameter)
+    window.history.replaceState({}, document.title, window.location.pathname);
 
     return {
       success: true,
@@ -164,11 +149,4 @@ export const signOut = async (): Promise<void> => {
   console.log('[Auth] Signing out...');
   await removeAuthToken();
   console.log('[Auth] Sign out complete');
-};
-
-/**
- * Get the redirect URI (useful for debugging)
- */
-export const getOAuthRedirectURI = (): string => {
-  return getRedirectURI();
 };
