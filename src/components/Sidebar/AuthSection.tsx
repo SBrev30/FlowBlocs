@@ -1,6 +1,5 @@
 import { LogIn, LogOut, User } from 'lucide-react';
 import { initiateNotionAuth, signOut } from '../../lib/auth';
-import useNotion from './useNotion';
 
 interface AuthSectionProps {
   isAuthenticated: boolean;
