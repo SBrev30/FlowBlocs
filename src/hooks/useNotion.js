@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import notionService from './notionService';
+import notionService from './services/notionService';
 
 /**
  * Custom React hook for Notion API operations
