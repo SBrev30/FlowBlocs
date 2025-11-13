@@ -20,45 +20,64 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
   const [databasePages, setDatabasePages] = useState<Record<string, NotionPage[]>>({});
   const [loading, setLoading] = useState(true);
   const [loadingPages, setLoadingPages] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
   const checkAuth = async () => {
+    console.log("🔍 Checking authentication...");
     try {
       const token = await getAuthToken();
+      console.log("🔑 Token exists:", !!token);
+      
       if (token) {
         setIsAuthenticated(true);
         await loadUserData();
         await loadDatabases();
+      } else {
+        console.log("❌ No token found");
       }
     } catch (error) {
-      console.error("Auth check failed:", error);
+      console.error("❌ Auth check failed:", error);
+      setError("Authentication failed");
     } finally {
       setLoading(false);
     }
   };
 
   const loadUserData = async () => {
+    console.log("👤 Loading user data...");
     try {
       const userData = await getCurrentUser();
+      console.log("✅ User loaded:", userData);
       setUser(userData);
     } catch (error) {
-      console.error("Failed to load user data:", error);
+      console.error("❌ Failed to load user data:", error);
+      setError("Failed to load user data");
     }
   };
 
   const loadDatabases = async () => {
+    console.log("📚 Loading databases...");
     try {
       const dbs = await searchDatabases();
+      console.log("✅ Databases loaded:", dbs.length, dbs);
       setDatabases(dbs);
+      
+      if (dbs.length === 0) {
+        console.log("⚠️ No databases found - have you shared any with the integration?");
+        setError("No databases found. Share a database with this integration in Notion.");
+      }
     } catch (error) {
-      console.error("Failed to load databases:", error);
+      console.error("❌ Failed to load databases:", error);
+      setError("Failed to load databases: " + (error as Error).message);
     }
   };
 
   const toggleDatabase = async (databaseId: string) => {
+    console.log("🔄 Toggling database:", databaseId);
     const newExpanded = new Set(expandedDatabases);
     
     if (newExpanded.has(databaseId)) {
@@ -70,15 +89,17 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
       
       // Load pages if not already loaded
       if (!databasePages[databaseId]) {
+        console.log("📄 Loading pages for database:", databaseId);
         setLoadingPages(new Set(loadingPages).add(databaseId));
         try {
           const response = await queryDatabase(databaseId);
+          console.log("✅ Pages loaded:", response.results.length, response.results);
           setDatabasePages(prev => ({
             ...prev,
             [databaseId]: response.results
           }));
         } catch (error) {
-          console.error("Failed to load database pages:", error);
+          console.error("❌ Failed to load database pages:", error);
         } finally {
           const newLoadingPages = new Set(loadingPages);
           newLoadingPages.delete(databaseId);
@@ -89,6 +110,7 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
   };
 
   const handleDragStart = (e: React.DragEvent, page: NotionPage, databaseId: string) => {
+    console.log("🎯 Drag started:", page.title);
     e.dataTransfer.effectAllowed = "copy";
     e.dataTransfer.setData("application/notion-page", JSON.stringify(page));
     onDragStart(page, databaseId);
@@ -139,10 +161,25 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
               <Loader2 className="spinner" size={20} />
               <span>Loading databases...</span>
             </div>
+          ) : error ? (
+            <div className="error-state">
+              <p style={{ color: '#ef4444', fontSize: '14px', padding: '12px' }}>{error}</p>
+            </div>
           ) : databases.length === 0 ? (
             <div className="empty-state">
               <p>No databases found</p>
               <small>Share a database with this integration in Notion</small>
+              <button 
+                onClick={loadDatabases}
+                style={{ 
+                  marginTop: '8px', 
+                  padding: '4px 8px', 
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                Refresh
+              </button>
             </div>
           ) : (
             <div className="database-list">
