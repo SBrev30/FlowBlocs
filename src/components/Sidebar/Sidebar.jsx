@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import useNotion from './hooks/useNotion';
+import { useNotion } from '../../hooks/useNotion';
 
 /**
  * Example Sidebar Component
