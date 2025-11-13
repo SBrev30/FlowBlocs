@@ -4,7 +4,7 @@ import { GoSidebarCollapse } from "react-icons/go";
 import { searchDatabases, queryDatabase, getCurrentUser, NotionPage, NotionDatabase } from "../../lib/notion-api";
 import { getAuthToken } from "../../lib/storage";
 import AuthSection from "./AuthSection";
-import useNotion from './useNotion';
+import useNotion from './hooks/useNotion';
 import "./Sidebar.css";
 
 interface SidebarProps {
