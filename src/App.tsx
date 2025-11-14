@@ -3,13 +3,9 @@ import Sidebar from './components/Sidebar/Sidebar';
 import Canvas from './components/Canvas/CanvasContainer';
 import { AuthCallback } from './components/AuthCallback';
 import { checkAuthStatus } from './lib/auth';
+import { getAuthToken } from './lib/storage';
+import { NotionSidebarService, NotionPage, NotionBlock } from './lib/notion-sidebar-integration';
 import './styles/variables.css';
-
-interface NotionPage {
-  id: string;
-  title: string;
-  icon?: string;
-}
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -50,8 +46,24 @@ function App() {
     console.log('Drag started:', page.title, 'from database:', databaseId);
   };
 
-  const handleDrop = (page: NotionPage, position: { x: number; y: number }) => {
+  const handleDrop = async (page: NotionPage, position: { x: number; y: number }): Promise<NotionBlock[]> => {
     console.log('Page dropped:', page.title, 'at position:', position);
+
+    try {
+      const token = await getAuthToken();
+      if (!token) {
+        console.error('No auth token available');
+        return [];
+      }
+
+      const service = new NotionSidebarService(token);
+      const blocks = await service.fetchPageContent(page.id);
+      console.log('Fetched blocks for page:', page.title, blocks);
+      return blocks;
+    } catch (error) {
+      console.error('Failed to fetch page content:', error);
+      return [];
+    }
   };
 
   if (isLoading) {

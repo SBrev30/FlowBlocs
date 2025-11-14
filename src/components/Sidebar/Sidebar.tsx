@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Database, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
+import { Database, ChevronRight, ChevronDown, Loader2, RefreshCw, Search, X } from "lucide-react";
 import { GoSidebarCollapse } from "react-icons/go";
-import { searchDatabases, queryDatabase, getCurrentUser, NotionPage, NotionDatabase, checkPageHasChildren } from "../../lib/notion-api";
+import { getCurrentUser } from "../../lib/notion-api";
 import { getAuthToken } from "../../lib/storage";
+import { useNotionSidebar, NotionDatabase, NotionPage } from "../../lib/notion-sidebar-integration";
 import AuthSection from "./AuthSection";
 import PageTreeItem from "./PageTreeItem";
 import "./Sidebar.css";
@@ -16,12 +17,21 @@ interface SidebarProps {
 const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [databases, setDatabases] = useState<NotionDatabase[]>([]);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [expandedDatabases, setExpandedDatabases] = useState<Set<string>>(new Set());
   const [databasePages, setDatabasePages] = useState<Record<string, NotionPage[]>>({});
-  const [loading, setLoading] = useState(true);
   const [loadingPages, setLoadingPages] = useState<Set<string>>(new Set());
-  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredDatabases, setFilteredDatabases] = useState<NotionDatabase[]>([]);
+
+  const {
+    databases,
+    loading,
+    error,
+    loadDatabases,
+    loadDatabasePages,
+    searchDatabases: searchDatabasesService,
+  } = useNotionSidebar(accessToken);
 
   useEffect(() => {
     checkAuth();
@@ -32,19 +42,16 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
     try {
       const token = await getAuthToken();
       console.log("🔑 Token exists:", !!token);
-      
+
       if (token) {
+        setAccessToken(token);
         setIsAuthenticated(true);
         await loadUserData();
-        await loadDatabases();
       } else {
         console.log("❌ No token found");
       }
     } catch (error) {
       console.error("❌ Auth check failed:", error);
-      setError("Authentication failed");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -56,55 +63,54 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
       setUser(userData);
     } catch (error) {
       console.error("❌ Failed to load user data:", error);
-      setError("Failed to load user data");
     }
   };
 
-  const loadDatabases = async () => {
-    console.log("📚 Loading databases...");
-    try {
-      const dbs = await searchDatabases();
-      console.log("✅ Databases loaded:", dbs.length, dbs);
-      setDatabases(dbs);
-      
-      if (dbs.length === 0) {
-        console.log("⚠️ No databases found - have you shared any with the integration?");
-        setError("No databases found. Share a database with this integration in Notion.");
-      }
-    } catch (error) {
-      console.error("❌ Failed to load databases:", error);
-      setError("Failed to load databases: " + (error as Error).message);
+  useEffect(() => {
+    if (accessToken) {
+      loadDatabases();
+    }
+  }, [accessToken, loadDatabases]);
+
+  useEffect(() => {
+    setFilteredDatabases(databases);
+  }, [databases]);
+
+  const handleRefresh = () => {
+    loadDatabases(true);
+  };
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      const results = await searchDatabasesService(query);
+      setFilteredDatabases(results);
+    } else {
+      setFilteredDatabases(databases);
     }
   };
 
   const toggleDatabase = async (databaseId: string) => {
     console.log("🔄 Toggling database:", databaseId);
     const newExpanded = new Set(expandedDatabases);
-    
+
     if (newExpanded.has(databaseId)) {
       newExpanded.delete(databaseId);
       setExpandedDatabases(newExpanded);
     } else {
       newExpanded.add(databaseId);
       setExpandedDatabases(newExpanded);
-      
+
       if (!databasePages[databaseId]) {
         console.log("📄 Loading pages for database:", databaseId);
         setLoadingPages(new Set(loadingPages).add(databaseId));
         try {
-          const response = await queryDatabase(databaseId);
-          console.log("✅ Pages loaded:", response.results.length, response.results);
-
-          const pagesWithChildInfo = await Promise.all(
-            response.results.map(async (page) => {
-              const hasChildren = await checkPageHasChildren(page.id);
-              return { ...page, hasChildren };
-            })
-          );
+          const pages = await loadDatabasePages(databaseId);
+          console.log("✅ Pages loaded:", pages.length, pages);
 
           setDatabasePages(prev => ({
             ...prev,
-            [databaseId]: pagesWithChildInfo
+            [databaseId]: pages
           }));
         } catch (error) {
           console.error("❌ Failed to load database pages:", error);
@@ -151,7 +157,7 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
         </button>
       </div>
 
-      <AuthSection 
+      <AuthSection
         isAuthenticated={isAuthenticated}
         user={user}
         onAuthChange={checkAuth}
@@ -162,6 +168,33 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
           <div className="section-header">
             <Database size={16} />
             <span>Databases</span>
+            <button
+              onClick={handleRefresh}
+              className="icon-button"
+              title="Refresh databases"
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
+
+          <div className="search-bar">
+            <Search size={14} className="search-icon" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search databases..."
+              className="search-input"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => handleSearch('')}
+                className="clear-button"
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -173,25 +206,31 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
             <div className="error-state">
               <p style={{ color: '#ef4444', fontSize: '14px', padding: '12px' }}>{error}</p>
             </div>
-          ) : databases.length === 0 ? (
+          ) : filteredDatabases.length === 0 ? (
             <div className="empty-state">
-              <p>No databases found</p>
-              <small>Share a database with this integration in Notion</small>
-              <button 
-                onClick={loadDatabases}
-                style={{ 
-                  marginTop: '8px', 
-                  padding: '4px 8px', 
-                  fontSize: '12px',
-                  cursor: 'pointer'
-                }}
-              >
-                Refresh
-              </button>
+              <p>{searchQuery ? 'No databases match your search' : 'No databases found'}</p>
+              <small>
+                {searchQuery
+                  ? 'Try a different search term'
+                  : 'Share a database with this integration in Notion'}
+              </small>
+              {!searchQuery && (
+                <button
+                  onClick={handleRefresh}
+                  style={{
+                    marginTop: '8px',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Refresh
+                </button>
+              )}
             </div>
           ) : (
             <div className="database-list">
-              {databases.map(db => (
+              {filteredDatabases.map(db => (
                 <div key={db.id} className="database-item">
                   <button
                     className="database-header"
