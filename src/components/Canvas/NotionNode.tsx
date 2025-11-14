@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { ExternalLink, Maximize2, Minimize2 } from 'lucide-react';
+import { ExternalLink, Maximize2, Minimize2, ChevronRight } from 'lucide-react';
 import { NotionPage } from '../../lib/notion-api';
 
 interface NotionNodeData {
@@ -68,6 +68,15 @@ const NotionNode = ({ data }: NodeProps<NotionNodeData>) => {
             <p className="placeholder-text">Double-click to edit content</p>
             <p className="placeholder-hint">Content editing coming soon</p>
           </div>
+          {page.hasChildren && page.childCount && page.childCount > 0 && (
+            <div className="node-children-info">
+              <div className="children-badge">
+                <ChevronRight size={12} />
+                <span>{page.childCount} sub-page{page.childCount > 1 ? 's' : ''}</span>
+              </div>
+              <p className="children-hint">Sub-pages can be found in the sidebar</p>
+            </div>
+          )}
         </div>
       )}
 

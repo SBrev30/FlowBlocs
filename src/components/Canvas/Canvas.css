@@ -228,3 +228,28 @@
   cursor: grabbing;
   opacity: 0.8;
 }
+
+.node-children-info {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.children-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.children-hint {
+  margin-top: var(--spacing-xs);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}

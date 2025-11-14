@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Database, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { GoSidebarCollapse } from "react-icons/go";
-import { searchDatabases, queryDatabase, getCurrentUser, NotionPage, NotionDatabase } from "../../lib/notion-api";
+import { searchDatabases, queryDatabase, getCurrentUser, NotionPage, NotionDatabase, checkPageHasChildren } from "../../lib/notion-api";
 import { getAuthToken } from "../../lib/storage";
 import AuthSection from "./AuthSection";
+import PageTreeItem from "./PageTreeItem";
 import "./Sidebar.css";
 
 interface SidebarProps {
@@ -87,16 +88,23 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
       newExpanded.add(databaseId);
       setExpandedDatabases(newExpanded);
       
-      // Load pages if not already loaded
       if (!databasePages[databaseId]) {
         console.log("📄 Loading pages for database:", databaseId);
         setLoadingPages(new Set(loadingPages).add(databaseId));
         try {
           const response = await queryDatabase(databaseId);
           console.log("✅ Pages loaded:", response.results.length, response.results);
+
+          const pagesWithChildInfo = await Promise.all(
+            response.results.map(async (page) => {
+              const hasChildren = await checkPageHasChildren(page.id);
+              return { ...page, hasChildren };
+            })
+          );
+
           setDatabasePages(prev => ({
             ...prev,
-            [databaseId]: response.results
+            [databaseId]: pagesWithChildInfo
           }));
         } catch (error) {
           console.error("❌ Failed to load database pages:", error);
@@ -211,15 +219,13 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
                         </div>
                       ) : (
                         databasePages[db.id]?.map(page => (
-                          <div
+                          <PageTreeItem
                             key={page.id}
-                            className="page-item"
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, page, db.id)}
-                          >
-                            <span className="page-icon">{page.icon || "📄"}</span>
-                            <span className="page-title">{page.title}</span>
-                          </div>
+                            page={page}
+                            databaseId={db.id}
+                            depth={0}
+                            onDragStart={onDragStart}
+                          />
                         ))
                       )}
                     </div>

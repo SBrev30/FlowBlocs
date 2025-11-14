@@ -16,6 +16,13 @@ export interface NotionPage {
   cover?: any;
   properties: Record<string, any>;
   url: string;
+  parentId?: string;
+  hasChildren?: boolean;
+  childCount?: number;
+  children?: NotionPage[];
+  depthLevel?: number;
+  objectType?: 'page' | 'database';
+  lastSynced?: string;
 }
 
 export interface NotionBlock {
@@ -152,4 +159,99 @@ export const appendBlocks = async (
   children: any[]
 ): Promise<void> => {
   await makeNotionRequest(`/blocks/${blockId}/children`, 'PATCH', { children });
+};
+
+export const getPageChildren = async (pageId: string): Promise<NotionPage[]> => {
+  const response = await makeNotionRequest('/search', 'POST', {
+    filter: {
+      property: 'object',
+      value: 'page',
+    },
+    query: '',
+  });
+
+  const blocks = await getPageBlocks(pageId);
+  const childPageBlocks = blocks.filter(
+    (block: any) => block.type === 'child_page'
+  );
+
+  const childPages: NotionPage[] = [];
+  for (const block of childPageBlocks) {
+    try {
+      const pageResponse = await makeNotionRequest(`/pages/${block.id}`, 'GET');
+      const titleProperty = Object.values(pageResponse.properties).find(
+        (prop: any) => prop.type === 'title'
+      ) as any;
+
+      childPages.push({
+        id: pageResponse.id,
+        title: titleProperty?.title?.[0]?.plain_text || block.child_page?.title || 'Untitled',
+        icon: extractIcon(pageResponse.icon),
+        cover: pageResponse.cover,
+        properties: pageResponse.properties,
+        url: pageResponse.url,
+        parentId: pageId,
+        objectType: 'page',
+      });
+    } catch (error) {
+      console.error(`Failed to fetch child page ${block.id}:`, error);
+    }
+  }
+
+  return childPages;
+};
+
+export const checkPageHasChildren = async (pageId: string): Promise<boolean> => {
+  try {
+    const blocks = await getPageBlocks(pageId);
+    return blocks.some((block: any) => block.type === 'child_page');
+  } catch (error) {
+    console.error(`Failed to check children for page ${pageId}:`, error);
+    return false;
+  }
+};
+
+export const getPageHierarchy = async (
+  pageId: string,
+  maxDepth: number = 3,
+  currentDepth: number = 0
+): Promise<NotionPage | null> => {
+  try {
+    const pageResponse = await makeNotionRequest(`/pages/${pageId}`, 'GET');
+    const titleProperty = Object.values(pageResponse.properties).find(
+      (prop: any) => prop.type === 'title'
+    ) as any;
+
+    const page: NotionPage = {
+      id: pageResponse.id,
+      title: titleProperty?.title?.[0]?.plain_text || 'Untitled',
+      icon: extractIcon(pageResponse.icon),
+      cover: pageResponse.cover,
+      properties: pageResponse.properties,
+      url: pageResponse.url,
+      depthLevel: currentDepth,
+      objectType: 'page',
+      children: [],
+    };
+
+    if (currentDepth < maxDepth) {
+      const children = await getPageChildren(pageId);
+      page.hasChildren = children.length > 0;
+      page.childCount = children.length;
+
+      if (children.length > 0) {
+        const childHierarchies = await Promise.all(
+          children.map(child => getPageHierarchy(child.id, maxDepth, currentDepth + 1))
+        );
+        page.children = childHierarchies.filter(Boolean) as NotionPage[];
+      }
+    } else {
+      page.hasChildren = await checkPageHasChildren(pageId);
+    }
+
+    return page;
+  } catch (error) {
+    console.error(`Failed to fetch page hierarchy for ${pageId}:`, error);
+    return null;
+  }
 };
