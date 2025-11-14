@@ -52,7 +52,6 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
         setIsAuthenticated(false);
         setAccessToken(null);
         setUser(null);
-        setDatabases([]);
         setFilteredDatabases([]);
         setDatabasePages({});
         setExpandedDatabases(new Set());
@@ -135,13 +134,6 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
         }
       }
     }
-  };
-
-  const handleDragStart = (e: React.DragEvent, page: NotionPage, databaseId: string) => {
-    console.log("🎯 Drag started:", page.title);
-    e.dataTransfer.effectAllowed = "copy";
-    e.dataTransfer.setData("application/notion-page", JSON.stringify(page));
-    onDragStart(page, databaseId);
   };
 
   if (isCollapsed) {

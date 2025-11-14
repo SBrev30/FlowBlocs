@@ -39,6 +39,35 @@ const extractIcon = (icon: any): string | undefined => {
   return undefined;
 };
 
+const extractTitle = (properties: any, fallback: string = 'Untitled'): string => {
+  if (!properties) {
+    console.warn('⚠️ No properties object provided for title extraction');
+    return fallback;
+  }
+
+  const propertyNames = ['Name', 'Title', 'title', 'name'];
+
+  for (const propName of propertyNames) {
+    const prop = properties[propName];
+    if (prop && prop.type === 'title' && prop.title?.[0]?.plain_text) {
+      console.log(`✅ Found title in property "${propName}":`, prop.title[0].plain_text);
+      return prop.title[0].plain_text;
+    }
+  }
+
+  const titleProperty = Object.values(properties).find(
+    (prop: any) => prop?.type === 'title'
+  ) as any;
+
+  if (titleProperty?.title?.[0]?.plain_text) {
+    console.log('✅ Found title via type search:', titleProperty.title[0].plain_text);
+    return titleProperty.title[0].plain_text;
+  }
+
+  console.warn('⚠️ Could not extract title from properties:', Object.keys(properties));
+  return fallback;
+};
+
 /**
  * Make a request through Supabase proxy to avoid CORS issues
  */
@@ -95,11 +124,15 @@ export const searchDatabases = async (): Promise<NotionDatabase[]> => {
     },
   });
 
-  return response.results.map((db: any) => ({
-    id: db.id,
-    title: db.title?.[0]?.plain_text || 'Untitled',
-    icon: extractIcon(db.icon),
-  }));
+  return response.results.map((db: any) => {
+    const title = db.title?.[0]?.plain_text || 'Untitled Database';
+    console.log(`📚 Database found: ${title} (${db.id})`);
+    return {
+      id: db.id,
+      title,
+      icon: extractIcon(db.icon),
+    };
+  });
 };
 
 export const queryDatabase = async (
@@ -121,13 +154,12 @@ export const queryDatabase = async (
   );
 
   const results = response.results.map((page: any) => {
-    const titleProperty = Object.values(page.properties).find(
-      (prop: any) => prop.type === 'title'
-    ) as any;
+    const title = extractTitle(page.properties, 'Untitled Page');
+    console.log(`📄 Page extracted: ${title} (${page.id})`);
 
     return {
       id: page.id,
-      title: titleProperty?.title?.[0]?.plain_text || 'Untitled',
+      title,
       icon: extractIcon(page.icon),
       cover: page.cover,
       properties: page.properties,
@@ -162,14 +194,6 @@ export const appendBlocks = async (
 };
 
 export const getPageChildren = async (pageId: string): Promise<NotionPage[]> => {
-  const response = await makeNotionRequest('/search', 'POST', {
-    filter: {
-      property: 'object',
-      value: 'page',
-    },
-    query: '',
-  });
-
   const blocks = await getPageBlocks(pageId);
   const childPageBlocks = blocks.filter(
     (block: any) => block.type === 'child_page'
@@ -179,13 +203,16 @@ export const getPageChildren = async (pageId: string): Promise<NotionPage[]> => 
   for (const block of childPageBlocks) {
     try {
       const pageResponse = await makeNotionRequest(`/pages/${block.id}`, 'GET');
-      const titleProperty = Object.values(pageResponse.properties).find(
-        (prop: any) => prop.type === 'title'
-      ) as any;
+      const title = extractTitle(
+        pageResponse.properties,
+        block.child_page?.title || 'Untitled Child Page'
+      );
+
+      console.log(`👶 Child page: ${title} (${pageResponse.id})`);
 
       childPages.push({
         id: pageResponse.id,
-        title: titleProperty?.title?.[0]?.plain_text || block.child_page?.title || 'Untitled',
+        title,
         icon: extractIcon(pageResponse.icon),
         cover: pageResponse.cover,
         properties: pageResponse.properties,
@@ -218,13 +245,12 @@ export const getPageHierarchy = async (
 ): Promise<NotionPage | null> => {
   try {
     const pageResponse = await makeNotionRequest(`/pages/${pageId}`, 'GET');
-    const titleProperty = Object.values(pageResponse.properties).find(
-      (prop: any) => prop.type === 'title'
-    ) as any;
+    const title = extractTitle(pageResponse.properties, 'Untitled Page');
+    console.log(`🌳 Page hierarchy: ${title} at depth ${currentDepth}`);
 
     const page: NotionPage = {
       id: pageResponse.id,
-      title: titleProperty?.title?.[0]?.plain_text || 'Untitled',
+      title,
       icon: extractIcon(pageResponse.icon),
       cover: pageResponse.cover,
       properties: pageResponse.properties,

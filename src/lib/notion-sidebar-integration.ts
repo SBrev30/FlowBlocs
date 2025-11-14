@@ -15,12 +15,19 @@ export interface NotionPage {
   id: string;
   title: string;
   icon?: string;
+  cover?: any;
   url: string;
   properties: Record<string, any>;
   databaseId?: string;
   hasChildren?: boolean;
+  childCount?: number;
+  children?: NotionPage[];
   createdTime?: string;
   lastEditedTime?: string;
+  parentId?: string;
+  objectType?: 'page' | 'database';
+  depthLevel?: number;
+  lastSynced?: string;
 }
 
 export interface NotionBlock {
@@ -35,10 +42,8 @@ export interface NotionBlock {
 const CACHE_TTL_MINUTES = 30;
 
 export class NotionSidebarService {
-  private accessToken: string;
-
   constructor(accessToken: string) {
-    this.accessToken = accessToken;
+    void accessToken;
   }
 
   private async isCacheStale(
@@ -149,23 +154,33 @@ export class NotionSidebarService {
     const response = await NotionAPI.queryDatabase(databaseId);
     const pages = response.results;
 
+    console.log(`📄 Retrieved ${pages.length} pages from database ${databaseId}`);
+
     for (const page of pages) {
+      if (!page.title || page.title === 'Untitled') {
+        console.warn(`⚠️ Page ${page.id} has no valid title, checking properties:`, Object.keys(page.properties || {}));
+      }
+
       const hasChildren = await NotionAPI.checkPageHasChildren(page.id);
+
+      const pageData = {
+        id: page.id,
+        database_id: databaseId,
+        title: page.title || 'Untitled Page',
+        icon: page.icon || null,
+        url: page.url || `https://notion.so/${page.id.replace(/-/g, '')}`,
+        properties: page.properties || {},
+        created_time: new Date().toISOString(),
+        last_edited_time: new Date().toISOString(),
+        has_children: hasChildren,
+        last_synced: new Date().toISOString(),
+      };
+
+      console.log(`✅ Caching page: ${pageData.title} (${page.id})`);
 
       const { error } = await supabase
         .from('notion_page_properties_cache')
-        .upsert({
-          id: page.id,
-          database_id: databaseId,
-          title: page.title,
-          icon: page.icon,
-          url: page.url,
-          properties: page.properties,
-          created_time: new Date().toISOString(),
-          last_edited_time: new Date().toISOString(),
-          has_children: hasChildren,
-          last_synced: new Date().toISOString(),
-        }, {
+        .upsert(pageData, {
           onConflict: 'id'
         });
 
@@ -180,10 +195,21 @@ export class NotionSidebarService {
       .eq('id', databaseId);
 
     console.log('✅ Pages cached:', pages.length);
-    return pages.map(page => ({
-      ...page,
-      databaseId,
-    }));
+    const mappedPages = pages.map(page => {
+      const mappedPage: NotionPage = {
+        id: page.id,
+        title: page.title || 'Untitled Page',
+        icon: page.icon,
+        url: page.url || `https://notion.so/${page.id.replace(/-/g, '')}`,
+        properties: page.properties || {},
+        databaseId,
+        hasChildren: page.hasChildren,
+      };
+      console.log(`🗂️ Mapped page for UI: ${mappedPage.title}`);
+      return mappedPage;
+    });
+
+    return mappedPages;
   }
 
   async fetchPageContent(

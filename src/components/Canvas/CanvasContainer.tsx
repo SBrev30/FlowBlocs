@@ -103,13 +103,38 @@ const CanvasContainer = ({ onDrop }: CanvasContainerProps) => {
       event.preventDefault();
 
       const pageData = event.dataTransfer.getData('application/notion-page');
-      if (!pageData || !reactFlowInstance) return;
+      console.log('📥 Drop received, raw data:', pageData?.substring(0, 200));
 
-      const page: NotionPage = JSON.parse(pageData);
+      if (!pageData || !reactFlowInstance) {
+        console.error('❌ Drop failed: no page data or react flow instance');
+        return;
+      }
+
+      let page: NotionPage;
+      try {
+        page = JSON.parse(pageData);
+        console.log('✅ Parsed page data:', {
+          id: page.id,
+          title: page.title,
+          icon: page.icon,
+          url: page.url,
+        });
+      } catch (error) {
+        console.error('❌ Failed to parse page data:', error);
+        return;
+      }
+
+      if (!page.id || !page.title) {
+        console.error('❌ Invalid page structure:', page);
+        return;
+      }
+
       const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
+
+      console.log('📍 Drop position:', position);
 
       const nodeId = `${page.id}-${Date.now()}`;
 

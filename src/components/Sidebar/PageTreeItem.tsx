@@ -35,6 +35,20 @@ const PageTreeItem = ({ page, databaseId, depth, onDragStart }: PageTreeItemProp
   };
 
   const handleDragStart = (e: React.DragEvent) => {
+    if (!page.id || !page.title) {
+      console.error("❌ Invalid page data for drag in tree:", page);
+      e.preventDefault();
+      return;
+    }
+
+    console.log("🌳 Tree item drag started:", page.title);
+    console.log("📄 Child page data:", {
+      id: page.id,
+      title: page.title,
+      icon: page.icon,
+      hasChildren: page.hasChildren,
+    });
+
     e.dataTransfer.effectAllowed = "copy";
     e.dataTransfer.setData("application/notion-page", JSON.stringify(page));
     onDragStart(page, databaseId);
