@@ -1,7 +1,7 @@
 import { getAuthToken } from './storage';
 
-// Use Supabase Edge Function to proxy Notion API calls (fixes CORS)
-const SUPABASE_PROXY_URL = 'https://qaccpssuhvsltnzhjxfl.supabase.co/functions/v1/notion-api-proxy';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PROXY_URL = `${SUPABASE_URL}/functions/v1/notion-api-proxy`;
 
 export interface NotionDatabase {
   id: string;
