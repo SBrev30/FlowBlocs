@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from './supabase';
 import * as NotionAPI from './notion-api';
 
@@ -338,7 +338,10 @@ export function useNotionSidebar(accessToken: string | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const service = accessToken ? new NotionSidebarService(accessToken) : null;
+  const service = useMemo(
+    () => (accessToken ? new NotionSidebarService(accessToken) : null),
+    [accessToken]
+  );
 
   const loadDatabases = useCallback(async (forceRefresh: boolean = false) => {
     if (!service) return;
@@ -395,6 +398,14 @@ export function useNotionSidebar(accessToken: string | null) {
       return databases;
     }
   }, [service, databases]);
+
+  useEffect(() => {
+    if (!accessToken) {
+      setDatabases([]);
+      setLoading(false);
+      setError(null);
+    }
+  }, [accessToken]);
 
   return {
     databases,

@@ -49,9 +49,18 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
         await loadUserData();
       } else {
         console.log("❌ No token found");
+        setIsAuthenticated(false);
+        setAccessToken(null);
+        setUser(null);
+        setDatabases([]);
+        setFilteredDatabases([]);
+        setDatabasePages({});
+        setExpandedDatabases(new Set());
       }
     } catch (error) {
       console.error("❌ Auth check failed:", error);
+      setIsAuthenticated(false);
+      setAccessToken(null);
     }
   };
 
@@ -70,10 +79,15 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
     if (accessToken) {
       loadDatabases();
     }
-  }, [accessToken, loadDatabases]);
+  }, [accessToken]);
 
   useEffect(() => {
     setFilteredDatabases(databases);
+    if (databases.length === 0) {
+      setDatabasePages({});
+      setExpandedDatabases(new Set());
+      setSearchQuery('');
+    }
   }, [databases]);
 
   const handleRefresh = () => {
