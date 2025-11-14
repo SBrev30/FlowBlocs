@@ -3,3 +3,628 @@ For all designs I ask you to make, have them be beautiful, not cookie cutter. Ma
 By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
 
 Use icons from lucide-react for logos.
+
+For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+
+By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+
+Use icons from lucide-react for logos.
+
+Here's a checklist to follow for the project.
+# Notion Infinite Canvas - Development Checklist
+
+## 🚀 Project Setup & Planning
+
+### Repository & Environment Setup
+- [x] Create GitHub repository
+- [x] Initialize Git repository locally
+- [x] Add `.gitignore` for Node.js and Chrome extension
+- [x] Create `README.md` with project description
+- [x] Add this `CHECKLIST.md` to repository
+- [x] Set up project structure/folders
+- [x] Initialize npm project (`npm init`)
+- [x] Install core dependencies (React, Vite, ReactFlow)
+- [x] Configure Vite for Chrome extension build
+- [x] Create `.env.example` file with required variables
+- [x] Set up ESLint and Prettier for code quality
+- [x] Create `manifest.json` for Chrome extension (Manifest V3)
+
+### Notion Integration Setup
+- [x] Create Notion account (if not already existing)
+- [x] Go to https://www.notion.so/my-integrations
+- [x] Create new integration named "Notion Infinite Canvas"
+- [x] Configure integration as "Internal" for development
+- [x] Enable required capabilities (read, update, insert content, read user)
+- [x] Save Client ID and Client Secret securely
+- [x] Document integration setup in README
+
+### Backend Setup (for OAuth) - Using Supabase
+- [x] Create Supabase project (ID: qaccpssuhvsltnzhjxfl)
+- [x] Create Edge Function for OAuth token exchange
+- [x] Configure environment variables (NOTION_CLIENT_ID, NOTION_CLIENT_SECRET)
+- [x] Deploy Edge Function to Supabase
+- [x] Test token exchange endpoint
+- [x] Document backend API in README
+
+---
+
+## 📋 Phase 1: Core Extension Structure (Week 1-2)
+
+### Chrome Extension Basics
+- [x] Create `manifest.json` with required permissions
+  - [x] Add `storage` permission
+  - [x] Add `tabs` permission
+  - [x] Add `identity` permission (if using chrome.identity)
+  - [x] Add host permissions for Notion API
+- [x] Set up new tab page configuration in manifest
+- [x] Create basic HTML structure for new tab (`newtab/index.html`)
+- [x] Test extension loads in Chrome (`chrome://extensions/`)
+- [x] Note extension ID and update redirect URI in Notion
+
+### React Application Setup
+- [x] Create main React app component (`App.jsx`)
+- [x] Set up React Router (if needed for multiple views)
+- [x] Create basic layout with sidebar and canvas area
+- [x] Implement responsive layout (sidebar + main canvas)
+- [x] Add CSS/styling foundation (CSS modules or styled-components)
+- [x] Test hot reload works in development
+- [x] Build and test production bundle
+
+### Authentication Foundation
+- [x] Create `lib/auth.js` for authentication logic
+- [x] Implement OAuth flow initiation
+- [x] Create authorization URL with correct parameters
+- [x] Implement redirect handling after OAuth
+- [x] Create token exchange function (calls Supabase Edge Function)
+- [x] Implement secure token storage in Chrome storage
+- [x] Add token retrieval function
+- [x] Add token validation function
+- [x] Implement sign out functionality
+- [x] Test complete authentication flow
+
+### Storage Management
+- [x] Create `lib/storage.js` for Chrome storage wrapper
+- [x] Implement `saveAuthToken()` function
+- [x] Implement `getAuthToken()` function
+- [x] Implement `removeAuthToken()` function
+- [x] Implement `saveCanvasState()` function
+- [x] Implement `getCanvasState()` function
+- [x] Test storage.sync across browser instances
+- [x] Add error handling for storage operations
+
+---
+
+## 🎨 Phase 2: Sidebar Implementation (Week 3-4)
+
+### CSS Variables Setup
+- [ ] Create `styles/variables.css` file
+- [ ] Define all background color variables
+- [ ] Define all text color variables
+- [ ] Define all border color variables
+- [ ] Define node-specific color variables
+- [ ] Define UI element color variables (buttons, status, etc.)
+- [ ] Define spacing and sizing variables
+- [ ] Define transition timing variables
+- [ ] Define z-index layer variables
+- [ ] Add commented dark mode variables for future reference
+- [ ] Import variables.css in main app entry point
+- [ ] Test variables work across all stylesheets
+
+### Sidebar Structure
+- [x] Create `components/Sidebar` folder
+- [x] Create `Sidebar.jsx` main component
+- [ ] Apply theme-aware styling to sidebar
+- [ ] Implement sidebar toggle functionality
+- [ ] Add sidebar resize capability (optional)
+- [ ] Style sidebar with proper dimensions and colors for both themes
+- [ ] Test sidebar responsiveness
+- [ ] Test sidebar appearance in light and dark mode
+
+### Authentication Section
+- [x] Create `AuthSection.jsx` component
+- [x] Add "Sign in with Notion" button (unauthenticated state)
+- [ ] Add user profile display (authenticated state)
+- [ ] Fetch and display user information from Notion API
+- [ ] Add user avatar image
+- [ ] Add "Sign out" button
+- [ ] Implement loading states during authentication
+- [ ] Add error messages for failed authentication
+- [ ] Test authentication state persistence across page reloads
+
+### Notion API Wrapper (CRITICAL for Phase 2 completion)
+- [ ] Create `lib/notion-api.js` for API calls
+- [ ] Implement `getUser(accessToken)` function
+  - Endpoint: `https://api.notion.com/v1/users/me`
+  - Returns: user info (name, avatar, email)
+- [ ] Implement `searchDatabases(accessToken)` function
+  - Endpoint: `https://api.notion.com/v1/search`
+  - Filter: `{ "filter": { "value": "database", "property": "object" } }`
+  - Returns: list of databases user has shared with integration
+- [ ] Implement `queryDatabase(accessToken, databaseId)` function (for Phase 3)
+  - Endpoint: `https://api.notion.com/v1/databases/{database_id}/query`
+  - Returns: pages/items in the database
+- [ ] Implement `getPageContent(accessToken, pageId)` function (for Phase 3)
+  - Endpoint: `https://api.notion.com/v1/blocks/{page_id}/children`
+  - Returns: block content for a page
+- [ ] Add error handling for all API calls
+- [ ] Add rate limiting awareness (3 requests/second)
+
+**Key Database Integration Resources:**
+- Notion SDK Examples: https://github.com/makenotion/notion-sdk-js/tree/main/examples
+- Working with Databases: https://developers.notion.com/docs/working-with-databases
+- Working with Page Content: https://developers.notion.com/docs/working-with-page-content
+- Parse text from blocks: https://github.com/makenotion/notion-sdk-js/tree/main/examples/parse-text-from-any-block-type
+
+### Database List Component
+- [ ] Create `DatabaseList.jsx` component
+- [ ] Fetch list of accessible databases on authentication
+- [ ] Display databases in scrollable list
+- [ ] Add database icons/thumbnails
+- [ ] Show database titles
+- [ ] Add loading state while fetching databases
+- [ ] Add empty state message ("No databases shared")
+- [ ] Add error state for failed API calls
+- [ ] Implement refresh button for database list
+
+### Database Item Component
+- [ ] Create `DatabaseItems.jsx` component
+- [ ] Implement expand/collapse for database items
+- [ ] Fetch database items when database is expanded
+- [ ] Display page/item titles from database
+- [ ] Add page icons or preview images
+- [ ] Implement pagination for large databases
+- [ ] Add loading state for database items
+- [ ] Show item count badge on databases
+- [ ] Add empty state for databases with no items
+
+### Search & Filter
+- [ ] Add search input to sidebar
+- [ ] Implement database name filtering
+- [ ] Implement database item filtering within expanded databases
+- [ ] Add clear search button
+- [ ] Test search performance with multiple databases
+
+### Draggable Items
+- [ ] Create `DraggableItem.jsx` component
+- [ ] Implement HTML5 drag API on database items
+- [ ] Add drag handle visual indicator
+- [ ] Create drag preview/ghost element
+- [ ] Add data transfer with page information
+- [ ] Test drag initiation from sidebar
+- [ ] Add visual feedback during drag (cursor change, opacity)
+
+---
+
+## 🎯 Phase 3: Canvas Implementation (Week 5-6)
+
+### ReactFlow Setup
+- [x] Install ReactFlow (`npm install reactflow`)
+- [x] Create `components/Canvas` folder
+- [x] Create `CanvasContainer.jsx` component
+- [x] Initialize ReactFlow with basic configuration
+- [ ] Add ReactFlow background component (theme-aware)
+- [ ] Add ReactFlow controls (zoom, pan buttons)
+- [ ] Add ReactFlow minimap (theme-aware)
+- [ ] Configure canvas styling and theme
+- [ ] Apply theme colors to canvas background
+- [ ] Test basic pan and zoom functionality
+- [ ] Test canvas appearance in both themes
+
+### Drop Zone Implementation
+- [ ] Implement drop zone event handlers on canvas
+- [ ] Handle `onDragOver` event (prevent default)
+- [ ] Handle `onDrop` event
+- [ ] Extract page data from drag event
+- [ ] Calculate drop position on canvas
+- [ ] Create new node at drop position
+- [ ] Add visual feedback during drag over canvas
+- [ ] Test drag-and-drop from sidebar to canvas
+
+### Custom Node Component
+- [ ] Create `NotionNode.jsx` custom node component
+- [ ] Register custom node type with ReactFlow
+- [ ] Design node layout (header, content area, actions)
+- [ ] Apply theme-aware styling to nodes
+- [ ] Display page icon and title in node header
+- [ ] Add drag handle to node header
+- [ ] Add action buttons (expand, edit, delete)
+- [ ] Style nodes to match Milanote aesthetic in both themes
+- [ ] Implement different node sizes (collapsed vs expanded)
+- [ ] Test node appearance in light and dark mode
+
+### Node States - Collapsed View
+- [ ] Display minimal page preview in collapsed state
+- [ ] Show first line of text content or thumbnail
+- [ ] Add content type indicator icon
+- [ ] Implement hover effects
+- [ ] Add visual border/shadow on selection
+- [ ] Test collapsed node rendering with different content types
+
+### Node States - Expanded View
+- [ ] Create expanded node layout (larger size)
+- [ ] Fetch full page content from Notion API
+- [ ] Parse and render Notion blocks
+- [ ] Display text content with formatting preserved
+- [ ] Display images with proper sizing
+- [ ] Display lists, headings, and other block types
+- [ ] Add scrolling for long content
+- [ ] Add collapse button to return to compact view
+- [ ] Test expanded view with various content types
+
+### Canvas State Management
+- [ ] Set up `useNodesState` and `useEdgesState` hooks
+- [ ] Implement node creation logic
+- [ ] Implement node deletion logic
+- [ ] Implement node position updates
+- [ ] Track node expansion states
+- [ ] Create canvas state serialization function
+- [ ] Implement auto-save with debounce (save after 2 seconds of inactivity)
+- [ ] Add manual save button in toolbar
+- [ ] Test state persistence across page reloads
+
+### Canvas Controls
+- [ ] Add toolbar component above canvas
+- [ ] Add theme toggle button to toolbar
+- [ ] Add zoom in/out buttons
+- [ ] Add fit view button (zoom to show all nodes)
+- [ ] Add center view button
+- [ ] Add layout options dropdown (grid, auto-arrange)
+- [ ] Add connection toggle button
+- [ ] Implement keyboard shortcuts (zoom, delete, etc.)
+- [ ] Apply theme-aware styling to toolbar
+- [ ] Test all canvas controls
+- [ ] Test toolbar appearance in both themes
+
+---
+
+## ✏️ Phase 4: Editing & Sync (Week 7-8)
+
+### Node Editing Mode
+- [ ] Create `NodeEditor.jsx` component
+- [ ] Implement double-click to enter edit mode
+- [ ] Add edit button to trigger edit mode
+- [ ] Switch node to editing state (show editor)
+- [ ] Create rich text editor interface
+- [ ] Add text formatting toolbar (bold, italic, headings, etc.)
+- [ ] Implement edit mode exit (click outside, save button)
+- [ ] Add cancel button to discard changes
+- [ ] Test edit mode activation and deactivation
+
+### Rich Text Editor
+- [ ] Choose rich text editor library (Slate, Quill, or TipTap)
+- [ ] Install and configure editor
+- [ ] Map Notion block types to editor formats
+- [ ] Implement text formatting (bold, italic, underline, strikethrough)
+- [ ] Implement heading levels (H1, H2, H3)
+- [ ] Implement lists (bulleted, numbered, checkboxes)
+- [ ] Implement code blocks with syntax highlighting
+- [ ] Apply theme-aware styling to editor
+- [ ] Add placeholder text for empty blocks
+- [ ] Style editor to match Notion's appearance in both themes
+- [ ] Test all formatting options
+- [ ] Test editor appearance and readability in both themes
+
+### Content Sync to Notion
+- [ ] Create API wrapper for updating Notion pages
+- [ ] Implement `updatePageContent()` function
+- [ ] Parse editor content to Notion block format
+- [ ] Send PATCH request to Notion API
+- [ ] Handle API response and errors
+- [ ] Implement optimistic UI updates
+- [ ] Add loading/saving indicator on node
+- [ ] Show success confirmation (checkmark, toast, etc.)
+- [ ] Implement rollback on failed save
+- [ ] Test content sync with various edits
+
+### Add New Blocks Feature
+- [ ] Add "+ Add Block" button at bottom of expanded nodes
+- [ ] Create block type selector menu
+- [ ] Implement text block creation
+- [ ] Implement heading block creation
+- [ ] Implement list block creation
+- [ ] Implement image block creation (file upload)
+- [ ] Send POST request to Notion API to append blocks
+- [ ] Update node UI with new block immediately
+- [ ] Handle API errors for block creation
+- [ ] Test adding various block types
+
+### Sync Status Indicators
+- [ ] Create sync status component
+- [ ] Show "Saved" status in node when content synced
+- [ ] Show "Saving..." status during API call
+- [ ] Show "Error" status on failed sync
+- [ ] Add retry button for failed syncs
+- [ ] Add last sync timestamp display
+- [ ] Implement global sync status in toolbar
+- [ ] Test sync indicators with slow network
+
+### Error Handling
+- [ ] Create error boundary components
+- [ ] Add try-catch blocks around API calls
+- [ ] Implement user-friendly error messages
+- [ ] Add error logging for debugging
+- [ ] Create error recovery flows (retry, reload)
+- [ ] Handle network offline state
+- [ ] Handle token expiration errors
+- [ ] Test error scenarios systematically
+
+---
+
+## 🔄 Phase 5: Advanced Features (Week 9-10)
+
+### Polling & Real-time Updates
+- [ ] Implement polling mechanism for database changes
+- [ ] Set configurable polling interval (default 60 seconds)
+- [ ] Detect changes in Notion content
+- [ ] Update affected nodes on canvas
+- [ ] Show visual indicator when content updates
+- [ ] Add manual refresh button
+- [ ] Implement smart polling (pause when tab inactive)
+- [ ] Test polling with concurrent edits in Notion
+
+### Multi-Select & Bulk Operations
+- [ ] Implement Shift+Click for multi-select
+- [ ] Implement Ctrl/Cmd+Click for adding to selection
+- [ ] Add selection rectangle with drag (lasso select)
+- [ ] Highlight all selected nodes
+- [ ] Enable group drag of selected nodes
+- [ ] Add delete multiple nodes functionality
+- [ ] Add group alignment options
+- [ ] Test multi-select interactions
+
+### Node Connections (Optional)
+- [ ] Design connection line styling
+- [ ] Implement manual connection creation (drag from node handle)
+- [ ] Store connections in canvas state
+- [ ] Render connection lines with ReactFlow edges
+- [ ] Add connection labels (optional)
+- [ ] Implement connection deletion
+- [ ] Add toggle to show/hide all connections
+- [ ] Test connections with node movement
+
+### Layout Algorithms
+- [ ] Implement grid layout option
+- [ ] Implement force-directed layout (automatic spacing)
+- [ ] Implement hierarchical/tree layout
+- [ ] Implement circular layout
+- [ ] Add layout animation transitions
+- [ ] Add "Apply Layout" button in toolbar
+- [ ] Store layout preference per canvas
+- [ ] Test layouts with various node counts
+
+### Performance Optimization
+- [ ] Implement node virtualization for large canvases (100+ nodes)
+- [ ] Add lazy loading for node content
+- [ ] Optimize re-renders with React.memo
+- [ ] Implement request batching for API calls
+- [ ] Add request caching with cache invalidation
+- [ ] Implement debouncing for auto-save
+- [ ] Profile performance with React DevTools
+- [ ] Test with 500+ nodes canvas
+- [ ] Optimize memory usage
+
+---
+
+## 🎁 Phase 6: Polish & UX (Week 11-12)
+
+### Onboarding Experience
+- [ ] Create first-time user tutorial overlay
+- [ ] Add tooltips for key UI elements
+- [ ] Create "Getting Started" modal on first load
+- [ ] Add instructions for sharing databases
+- [ ] Implement "Skip tutorial" option
+- [ ] Add "Show tutorial again" in settings
+- [ ] Test onboarding flow with new users
+
+### Visual Polish
+- [ ] Refine color scheme and theme
+- [ ] Add smooth animations and transitions
+- [ ] Polish button hover states and interactions
+- [ ] Add loading skeletons for content
+- [ ] Implement toast notifications for actions
+- [ ] Add empty state illustrations
+- [ ] Polish typography and spacing
+- [ ] Add dark mode support (optional)
+- [ ] Review accessibility (keyboard navigation, ARIA labels)
+
+### Settings Panel
+- [ ] Create settings/preferences page
+- [ ] Add auto-save toggle
+- [ ] Add polling interval configuration
+- [ ] Add default node size preference
+- [ ] Add theme selection (light/dark)
+- [ ] Add keyboard shortcuts reference
+- [ ] Add clear cache option
+- [ ] Add export canvas data option
+- [ ] Store settings in Chrome storage
+
+### Help & Documentation
+- [ ] Create in-app help documentation
+- [ ] Add FAQ section
+- [ ] Add keyboard shortcuts cheatsheet
+- [ ] Add troubleshooting guide
+- [ ] Link to external documentation/website
+- [ ] Add contact/support information
+- [ ] Create demo video or GIF
+- [ ] Add "What's New" changelog
+
+### Sharing Features (Optional)
+- [ ] Implement share button in toolbar
+- [ ] Generate shareable canvas snapshot
+- [ ] Create view-only link generation
+- [ ] Add "Export as Image" functionality
+- [ ] Add "Export to Notion Page" functionality
+- [ ] Test sharing with different users
+
+---
+
+## 🧪 Testing & Quality Assurance
+
+### Unit Testing
+- [ ] Set up testing framework (Jest, Vitest)
+- [ ] Write tests for authentication functions
+- [ ] Write tests for storage utilities
+- [ ] Write tests for API wrapper functions
+- [ ] Write tests for data transformation logic
+- [ ] Write tests for state management
+- [ ] Achieve 70%+ code coverage
+- [ ] Set up CI/CD for automated testing
+
+### Component Testing
+- [ ] Set up React Testing Library
+- [ ] Write tests for Sidebar components
+- [ ] Write tests for Canvas components
+- [ ] Write tests for Node components
+- [ ] Write tests for Editor components
+- [ ] Test component props and state changes
+- [ ] Test user interactions (clicks, drags, etc.)
+
+### Integration Testing
+- [ ] Test complete authentication flow
+- [ ] Test drag-and-drop workflow end-to-end
+- [ ] Test content editing and sync flow
+- [ ] Test canvas state persistence
+- [ ] Test error recovery flows
+- [ ] Test with different database structures
+
+### Browser Testing
+- [ ] Test on different screen sizes
+
+
+### Performance Testing
+- [ ] Test with 10 nodes on canvas
+- [ ] Test with 100 nodes on canvas and limit to that amount
+- [ ] Monitor memory usage over time
+- [ ] Test API rate limiting behavior
+- [ ] Profile rendering performance
+- [ ] Optimize identified bottlenecks
+
+---
+
+## 📦 Production Preparation
+
+### Code Quality & Documentation
+- [ ] Review all code for consistency
+- [ ] Add comprehensive code comments
+- [ ] Update README with setup instructions
+- [ ] Document all API functions
+- [ ] Create architecture documentation
+- [ ] Add inline documentation for complex logic
+- [ ] Run final linting and formatting
+- [ ] Remove console.logs and debug code
+
+### Security Audit
+- [ ] Review all API calls for security issues
+- [ ] Ensure no secrets in client code
+- [ ] Verify token storage is secure
+- [ ] Test input sanitization
+- [ ] Review permissions requested
+- [ ] Audit third-party dependencies for vulnerabilities
+- [ ] Implement rate limiting on backend
+- [ ] Add HTTPS enforcement
+
+
+### Backend Deployment
+- [x] Deploy backend to production hosting (Supabase)
+- [x] Set up environment variables on hosting platform
+- [x] Enable HTTPS/SSL
+- [x] Set up logging and monitoring
+- [x] Configure CORS properly
+- [x] Test backend endpoints in production
+- [ ] Set up error alerting
+
+### Final Testing
+- [ ] Test with production backend
+- [ ] Test with production Notion integration
+- [ ] Verify all features work in packaged extension
+- [ ] Test installation flow from scratch
+- [ ] Verify analytics/tracking (if implemented)
+- [ ] Check all external links work
+- [ ] Test on clean browser profile
+
+---
+
+## 🚀 Launch
+
+### Chrome Web Store Submission
+- [ ] Upload packaged extension to Chrome Web Store
+- [ ] Complete all store listing fields
+- [ ] Submit for review
+- [ ] Monitor review status
+- [ ] Address any feedback from Chrome team
+- [ ] Wait for approval (typically 1-3 days)
+- [ ] Publish extension once approved
+
+### Marketing & Distribution
+- [ ] Announce launch on social media
+- [ ] Post on Product Hunt
+- [ ] Share in Notion communities (Reddit, Discord, etc.)
+- [ ] Write launch blog post
+- [ ] Create demo video/GIF for sharing
+- [ ] Reach out to tech blogs/reviewers
+- [ ] Add to extension directories
+- [ ] Monitor initial user feedback
+
+### Post-Launch Monitoring
+- [ ] Set up analytics dashboard
+- [ ] Monitor error logs and crash reports
+- [ ] Track user installation numbers
+- [ ] Monitor Chrome Web Store reviews
+- [ ] Watch for support requests
+- [ ] Track backend server performance
+- [ ] Monitor API usage and costs
+
+---
+
+## 🎯 Current Status
+
+**Last Updated**: November 13, 2025
+**Current Phase**: Phase 2 - Sidebar Implementation (in progress)
+**Completion Status**: ~35% of total tasks completed
+
+**Recently Completed:**
+- ✅ OAuth authentication flow with Supabase Edge Functions
+- ✅ Chrome extension structure with Manifest V3
+- ✅ Basic sidebar layout
+- ✅ Token storage and persistence
+
+**Next Priority Tasks:**
+1. Complete `lib/notion-api.js` with database integration functions
+2. Fetch and display user profile in sidebar
+3. Implement database list fetching and display
+4. Add search/filter functionality for databases
+5. Test database sharing and access
+
+**Key Resources for Current Phase:**
+- Notion SDK Examples: https://github.com/makenotion/notion-sdk-js/tree/main/examples
+- Working with Databases: https://developers.notion.com/docs/working-with-databases
+- Working with Page Content: https://developers.notion.com/docs/working-with-page-content
+
+---
+
+## 📝 Notes & Important Links
+
+### Essential Resources
+- **Notion API Docs**: https://developers.notion.com/docs
+- **ReactFlow Docs**: https://reactflow.dev
+- **Chrome Extension Docs**: https://developer.chrome.com/docs/extensions/
+- **Chrome Storage API**: https://developer.chrome.com/docs/extensions/reference/storage/
+- **Chrome Tabs API**: https://developer.chrome.com/docs/extensions/reference/tabs/
+
+### Repository Links
+- **Main Repository**: https://github.com/SBrev30/FlowBlocs
+- **Supabase Project**: qaccpssuhvsltnzhjxfl
+- **Edge Function**: notion-oauth-exchange
+
+### Development Notes
+```
+- Using Supabase Edge Functions instead of separate backend server
+- OAuth flow working with Chrome Identity API
+- Need to complete Notion API wrapper before moving to Phase 3
+- Focus on database integration for sidebar completion
+```
+
+---
+
+**Ready to tackle Phase 2 completion! 🚀**
+Focus: Complete Notion API wrapper and database list implementation

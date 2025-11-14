@@ -11,7 +11,7 @@ import ReactFlow, {
   Panel,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { NotionPage } from '../../lib/notion-api';
+import { NotionPage, NotionBlock } from '../../lib/notion-sidebar-integration';
 import { saveCanvasState, getCanvasState } from '../../lib/storage';
 import NotionNode from './NotionNode';
 import { Moon, Sun, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
@@ -22,7 +22,7 @@ const nodeTypes = {
 };
 
 interface CanvasContainerProps {
-  onDrop: (page: NotionPage, position: { x: number; y: number }) => void;
+  onDrop: (page: NotionPage, position: { x: number; y: number }) => Promise<NotionBlock[]>;
 }
 
 const CanvasContainer = ({ onDrop }: CanvasContainerProps) => {
@@ -99,7 +99,7 @@ const CanvasContainer = ({ onDrop }: CanvasContainerProps) => {
   }, []);
 
   const onDropHandler = useCallback(
-    (event: React.DragEvent) => {
+    async (event: React.DragEvent) => {
       event.preventDefault();
 
       const pageData = event.dataTransfer.getData('application/notion-page');
@@ -111,18 +111,58 @@ const CanvasContainer = ({ onDrop }: CanvasContainerProps) => {
         y: event.clientY,
       });
 
+      const nodeId = `${page.id}-${Date.now()}`;
+
       const newNode: Node = {
-        id: `${page.id}-${Date.now()}`,
+        id: nodeId,
         type: 'notionNode',
         position,
         data: {
           page,
           expanded: false,
+          loading: true,
+          blocks: [],
         },
       };
 
       setNodes((nds) => nds.concat(newNode));
-      onDrop(page, position);
+
+      try {
+        const blocks = await onDrop(page, position);
+
+        setNodes((nds) =>
+          nds.map((node) => {
+            if (node.id === nodeId) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  blocks,
+                  loading: false,
+                },
+              };
+            }
+            return node;
+          })
+        );
+      } catch (error) {
+        console.error('Failed to load page content:', error);
+        setNodes((nds) =>
+          nds.map((node) => {
+            if (node.id === nodeId) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  loading: false,
+                  error: 'Failed to load content',
+                },
+              };
+            }
+            return node;
+          })
+        );
+      }
     },
     [reactFlowInstance, onDrop, setNodes]
   );

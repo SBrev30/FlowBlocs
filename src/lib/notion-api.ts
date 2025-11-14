@@ -1,7 +1,7 @@
 import { getAuthToken } from './storage';
 
-const NOTION_API_BASE = 'https://api.notion.com/v1';
-const NOTION_VERSION = '2022-06-28';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PROXY_URL = `${SUPABASE_URL}/functions/v1/notion-api-proxy`;
 
 export interface NotionDatabase {
   id: string;
@@ -16,6 +16,13 @@ export interface NotionPage {
   cover?: any;
   properties: Record<string, any>;
   url: string;
+  parentId?: string;
+  hasChildren?: boolean;
+  childCount?: number;
+  children?: NotionPage[];
+  depthLevel?: number;
+  objectType?: 'page' | 'database';
+  lastSynced?: string;
 }
 
 export interface NotionBlock {
@@ -32,9 +39,13 @@ const extractIcon = (icon: any): string | undefined => {
   return undefined;
 };
 
+/**
+ * Make a request through Supabase proxy to avoid CORS issues
+ */
 const makeNotionRequest = async (
   endpoint: string,
-  options: RequestInit = {}
+  method: string = 'GET',
+  body?: any
 ): Promise<any> => {
   const token = await getAuthToken();
 
@@ -42,41 +53,46 @@ const makeNotionRequest = async (
     throw new Error('Not authenticated');
   }
 
-  const response = await fetch(`${NOTION_API_BASE}${endpoint}`, {
-    ...options,
+  console.log(`🔄 API Request: ${method} ${endpoint}`);
+
+  const response = await fetch(SUPABASE_PROXY_URL, {
+    method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Notion-Version': NOTION_VERSION,
       'Content-Type': 'application/json',
-      ...options.headers,
     },
+    body: JSON.stringify({
+      endpoint,
+      method,
+      body,
+      token
+    }),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Notion API request failed');
+    console.error('❌ API Error:', error);
+    throw new Error(error.error || 'Notion API request failed');
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log(`✅ API Response: ${method} ${endpoint}`, data);
+  return data;
 };
 
 export const getCurrentUser = async (): Promise<any> => {
-  return makeNotionRequest('/users/me');
+  return makeNotionRequest('/users/me', 'GET');
 };
 
 export const searchDatabases = async (): Promise<NotionDatabase[]> => {
-  const response = await makeNotionRequest('/search', {
-    method: 'POST',
-    body: JSON.stringify({
-      filter: {
-        property: 'object',
-        value: 'database',
-      },
-      sort: {
-        direction: 'descending',
-        timestamp: 'last_edited_time',
-      },
-    }),
+  const response = await makeNotionRequest('/search', 'POST', {
+    filter: {
+      property: 'object',
+      value: 'database',
+    },
+    sort: {
+      direction: 'descending',
+      timestamp: 'last_edited_time',
+    },
   });
 
   return response.results.map((db: any) => ({
@@ -98,10 +114,11 @@ export const queryDatabase = async (
     body.start_cursor = startCursor;
   }
 
-  const response = await makeNotionRequest(`/databases/${databaseId}/query`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
+  const response = await makeNotionRequest(
+    `/databases/${databaseId}/query`,
+    'POST',
+    body
+  );
 
   const results = response.results.map((page: any) => {
     const titleProperty = Object.values(page.properties).find(
@@ -126,7 +143,7 @@ export const queryDatabase = async (
 };
 
 export const getPageBlocks = async (pageId: string): Promise<NotionBlock[]> => {
-  const response = await makeNotionRequest(`/blocks/${pageId}/children`);
+  const response = await makeNotionRequest(`/blocks/${pageId}/children`, 'GET');
   return response.results;
 };
 
@@ -134,18 +151,107 @@ export const updatePageContent = async (
   blockId: string,
   content: Record<string, any>
 ): Promise<void> => {
-  await makeNotionRequest(`/blocks/${blockId}`, {
-    method: 'PATCH',
-    body: JSON.stringify(content),
-  });
+  await makeNotionRequest(`/blocks/${blockId}`, 'PATCH', content);
 };
 
 export const appendBlocks = async (
   blockId: string,
   children: any[]
 ): Promise<void> => {
-  await makeNotionRequest(`/blocks/${blockId}/children`, {
-    method: 'PATCH',
-    body: JSON.stringify({ children }),
+  await makeNotionRequest(`/blocks/${blockId}/children`, 'PATCH', { children });
+};
+
+export const getPageChildren = async (pageId: string): Promise<NotionPage[]> => {
+  const response = await makeNotionRequest('/search', 'POST', {
+    filter: {
+      property: 'object',
+      value: 'page',
+    },
+    query: '',
   });
+
+  const blocks = await getPageBlocks(pageId);
+  const childPageBlocks = blocks.filter(
+    (block: any) => block.type === 'child_page'
+  );
+
+  const childPages: NotionPage[] = [];
+  for (const block of childPageBlocks) {
+    try {
+      const pageResponse = await makeNotionRequest(`/pages/${block.id}`, 'GET');
+      const titleProperty = Object.values(pageResponse.properties).find(
+        (prop: any) => prop.type === 'title'
+      ) as any;
+
+      childPages.push({
+        id: pageResponse.id,
+        title: titleProperty?.title?.[0]?.plain_text || block.child_page?.title || 'Untitled',
+        icon: extractIcon(pageResponse.icon),
+        cover: pageResponse.cover,
+        properties: pageResponse.properties,
+        url: pageResponse.url,
+        parentId: pageId,
+        objectType: 'page',
+      });
+    } catch (error) {
+      console.error(`Failed to fetch child page ${block.id}:`, error);
+    }
+  }
+
+  return childPages;
+};
+
+export const checkPageHasChildren = async (pageId: string): Promise<boolean> => {
+  try {
+    const blocks = await getPageBlocks(pageId);
+    return blocks.some((block: any) => block.type === 'child_page');
+  } catch (error) {
+    console.error(`Failed to check children for page ${pageId}:`, error);
+    return false;
+  }
+};
+
+export const getPageHierarchy = async (
+  pageId: string,
+  maxDepth: number = 3,
+  currentDepth: number = 0
+): Promise<NotionPage | null> => {
+  try {
+    const pageResponse = await makeNotionRequest(`/pages/${pageId}`, 'GET');
+    const titleProperty = Object.values(pageResponse.properties).find(
+      (prop: any) => prop.type === 'title'
+    ) as any;
+
+    const page: NotionPage = {
+      id: pageResponse.id,
+      title: titleProperty?.title?.[0]?.plain_text || 'Untitled',
+      icon: extractIcon(pageResponse.icon),
+      cover: pageResponse.cover,
+      properties: pageResponse.properties,
+      url: pageResponse.url,
+      depthLevel: currentDepth,
+      objectType: 'page',
+      children: [],
+    };
+
+    if (currentDepth < maxDepth) {
+      const children = await getPageChildren(pageId);
+      page.hasChildren = children.length > 0;
+      page.childCount = children.length;
+
+      if (children.length > 0) {
+        const childHierarchies = await Promise.all(
+          children.map(child => getPageHierarchy(child.id, maxDepth, currentDepth + 1))
+        );
+        page.children = childHierarchies.filter(Boolean) as NotionPage[];
+      }
+    } else {
+      page.hasChildren = await checkPageHasChildren(pageId);
+    }
+
+    return page;
+  } catch (error) {
+    console.error(`Failed to fetch page hierarchy for ${pageId}:`, error);
+    return null;
+  }
 };
