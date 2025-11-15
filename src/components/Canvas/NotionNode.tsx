@@ -1,7 +1,8 @@
-import { memo, useState } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
-import { ExternalLink, Maximize2, Minimize2, ChevronRight, Loader2 } from 'lucide-react';
+import { memo, useState, useCallback } from 'react';
+import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
+import { ExternalLink, Maximize2, Minimize2, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { NotionPage, NotionBlock } from '../../lib/notion-sidebar-integration';
+import DeleteNodePopup from './DeleteNodePopup';
 
 interface NotionNodeData {
   page: NotionPage;
@@ -79,8 +80,11 @@ const BlockRenderer = ({ block }: { block: NotionBlock }) => {
   return <div className={`block block-${block.type}`}>{renderBlockContent()}</div>;
 };
 
-const NotionNode = ({ data }: NodeProps<NotionNodeData>) => {
+const NotionNode = ({ data, id }: NodeProps<NotionNodeData>) => {
   const [expanded, setExpanded] = useState(data.expanded || false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [deletePopupPosition, setDeletePopupPosition] = useState({ x: 0, y: 0 });
+  const { deleteElements } = useReactFlow();
   const { page, blocks, loading, error } = data;
 
   const getIcon = (icon: any) => {
@@ -99,84 +103,120 @@ const NotionNode = ({ data }: NodeProps<NotionNodeData>) => {
     return null;
   };
 
+  const handleDeleteClick = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    setDeletePopupPosition({
+      x: rect.left + rect.width + 8,
+      y: rect.top
+    });
+    setShowDeletePopup(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(() => {
+    deleteElements({ nodes: [{ id }] });
+    setShowDeletePopup(false);
+  }, [deleteElements, id]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setShowDeletePopup(false);
+  }, []);
+
   const coverUrl = getCover(page.cover);
 
   return (
-    <div className={`notion-node ${expanded ? 'expanded' : 'collapsed'}`}>
-      <Handle type="target" position={Position.Top} className="node-handle" />
+    <>
+      <div className={`notion-node ${expanded ? 'expanded' : 'collapsed'}`}>
+        <Handle type="target" position={Position.Top} className="node-handle" />
 
-      {coverUrl && expanded && (
-        <div className="node-cover">
-          <img src={coverUrl} alt="" />
-        </div>
-      )}
+        {coverUrl && expanded && (
+          <div className="node-cover">
+            <img src={coverUrl} alt="" />
+          </div>
+        )}
 
-      <div className="node-header">
-        <div className="node-icon">{getIcon(page.icon)}</div>
-        <div className="node-title">{page.title || 'Untitled'}</div>
-        <div className="node-actions">
-          <button
-            className="node-action-button"
-            onClick={() => setExpanded(!expanded)}
-            title={expanded ? 'Collapse' : 'Expand'}
-          >
-            {expanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-          </button>
-          <a
-            href={page.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="node-action-button"
-            title="Open in Notion"
-          >
-            <ExternalLink size={14} />
-          </a>
+        <div className="node-header">
+          <div className="node-icon">{getIcon(page.icon)}</div>
+          <div className="node-title">{page.title || 'Untitled'}</div>
+          <div className="node-actions">
+            <button
+              className="node-action-button"
+              onClick={() => setExpanded(!expanded)}
+              title={expanded ? 'Collapse' : 'Expand'}
+            >
+              {expanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+            <a
+              href={page.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="node-action-button"
+              title="Open in Notion"
+            >
+              <ExternalLink size={14} />
+            </a>
+            <button
+              className="node-action-button delete-button"
+              onClick={handleDeleteClick}
+              title="Delete node"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
+
+        {expanded && (
+          <div className="node-content">
+            {loading && (
+              <div className="node-loading">
+                <Loader2 className="spinner" size={20} />
+                <span>Loading content...</span>
+              </div>
+            )}
+
+            {error && (
+              <div className="node-error">
+                <p>{error}</p>
+              </div>
+            )}
+
+            {!loading && !error && blocks && blocks.length > 0 && (
+              <div className="node-blocks">
+                {blocks.map((block) => (
+                  <BlockRenderer key={block.id} block={block} />
+                ))}
+              </div>
+            )}
+
+            {!loading && !error && (!blocks || blocks.length === 0) && (
+              <div className="node-empty">
+                <p>No content in this page</p>
+              </div>
+            )}
+
+            {page.hasChildren && (
+              <div className="node-children-info">
+                <div className="children-badge">
+                  <ChevronRight size={12} />
+                  <span>{page.childCount || 0} sub-page{page.childCount !== 1 ? 's' : ''}</span>
+                </div>
+                <p className="children-hint">Sub-pages can be found in the sidebar</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <Handle type="source" position={Position.Bottom} className="node-handle" />
       </div>
 
-      {expanded && (
-        <div className="node-content">
-          {loading && (
-            <div className="node-loading">
-              <Loader2 className="spinner" size={20} />
-              <span>Loading content...</span>
-            </div>
-          )}
-
-          {error && (
-            <div className="node-error">
-              <p>{error}</p>
-            </div>
-          )}
-
-          {!loading && !error && blocks && blocks.length > 0 && (
-            <div className="node-blocks">
-              {blocks.map((block) => (
-                <BlockRenderer key={block.id} block={block} />
-              ))}
-            </div>
-          )}
-
-          {!loading && !error && (!blocks || blocks.length === 0) && (
-            <div className="node-empty">
-              <p>No content in this page</p>
-            </div>
-          )}
-
-          {page.hasChildren && (
-            <div className="node-children-info">
-              <div className="children-badge">
-                <ChevronRight size={12} />
-                <span>{page.childCount || 0} sub-page{page.childCount !== 1 ? 's' : ''}</span>
-              </div>
-              <p className="children-hint">Sub-pages can be found in the sidebar</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      <Handle type="source" position={Position.Bottom} className="node-handle" />
-    </div>
+      <DeleteNodePopup
+        isOpen={showDeletePopup}
+        nodeTitle={page.title || 'Untitled'}
+        position={deletePopupPosition}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
+    </>
   );
 };
 
