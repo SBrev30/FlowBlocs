@@ -55,14 +55,23 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
         setIsAuthenticated(false);
         setAccessToken(null);
         setUser(null);
+        // Clear all state when not authenticated
         setFilteredDatabases([]);
         setDatabasePages({});
         setExpandedDatabases(new Set());
+        setSearchQuery('');
+        setLoadingPages(new Set());
       }
     } catch (error) {
       console.error("❌ Auth check failed:", error);
       setIsAuthenticated(false);
       setAccessToken(null);
+      // Clear all state on auth failure
+      setFilteredDatabases([]);
+      setDatabasePages({});
+      setExpandedDatabases(new Set());
+      setSearchQuery('');
+      setLoadingPages(new Set());
     }
   };
 
@@ -80,8 +89,11 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
   useEffect(() => {
     if (accessToken) {
       loadDatabases();
+    } else {
+      // When accessToken becomes null, clear filtered databases immediately
+      setFilteredDatabases([]);
     }
-  }, [accessToken]);
+  }, [accessToken, loadDatabases]);
 
   useEffect(() => {
     setFilteredDatabases(databases);
@@ -93,6 +105,10 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
   }, [databases]);
 
   const handleRefresh = () => {
+    // Clear existing state before refreshing
+    setDatabasePages({});
+    setExpandedDatabases(new Set());
+    setSearchQuery('');
     loadDatabases(true);
   };
 
