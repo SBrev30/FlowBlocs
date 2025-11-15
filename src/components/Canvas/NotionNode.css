@@ -1,6 +1,8 @@
-/* NotionNode.css */
+/* NotionNode.css - Updated to avoid conflicts with Canvas.css */
 
-.notion-node {
+/* Use unique class prefix 'flowblocs-' to avoid conflicts */
+
+.flowblocs-node {
   min-width: 250px;
   max-width: 400px;
   background: var(--node-bg, #ffffff);
@@ -12,24 +14,24 @@
   overflow: hidden;
 }
 
-.notion-node.selected {
+.flowblocs-node.selected {
   border-color: var(--node-selected-border, #3b82f6);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.notion-node.expanded {
+.flowblocs-node.expanded {
   min-width: 350px;
   max-width: 500px;
   min-height: 300px;
 }
 
-.notion-node.editing {
+.flowblocs-node.editing {
   border-color: var(--node-editing-border, #10b981);
   box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
 }
 
 /* Node Header */
-.node-header {
+.flowblocs-node-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -38,7 +40,7 @@
   border-bottom: 1px solid var(--node-border, #e5e7eb);
 }
 
-.node-title {
+.flowblocs-node-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -46,12 +48,12 @@
   min-width: 0;
 }
 
-.node-icon {
+.flowblocs-node-icon {
   font-size: 1rem;
   flex-shrink: 0;
 }
 
-.title-text {
+.flowblocs-title-text {
   font-weight: 600;
   color: var(--text-primary, #1f2937);
   overflow: hidden;
@@ -59,58 +61,69 @@
   white-space: nowrap;
 }
 
-.node-actions {
+.flowblocs-node-actions {
   display: flex;
   gap: 0.25rem;
   flex-shrink: 0;
 }
 
-.action-btn {
-  padding: 0.25rem;
+.flowblocs-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.875rem;
   color: var(--text-secondary, #6b7280);
   transition: all 0.15s ease;
 }
 
-.action-btn:hover {
+.flowblocs-action-btn:hover {
   background: var(--btn-hover-bg, #e5e7eb);
   color: var(--text-primary, #1f2937);
 }
 
-.action-btn.active {
+.flowblocs-action-btn.active,
+.flowblocs-action-btn.expand-btn.active {
   background: var(--btn-active-bg, #3b82f6);
   color: white;
 }
 
-.edit-btn.active {
-  background: var(--edit-active-bg, #10b981);
+.flowblocs-action-btn.notion-btn:hover {
+  background: var(--notion-btn-hover, #dbeafe);
+  color: var(--notion-btn-color, #2563eb);
+}
+
+.flowblocs-action-btn.delete-btn:hover {
+  background: var(--delete-btn-hover, #fee2e2);
+  color: var(--delete-btn-color, #dc2626);
 }
 
 /* Node Summary */
-.node-summary {
+.flowblocs-node-summary {
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border-light, #f3f4f6);
 }
 
 /* Node Content (Expanded) */
-.node-content {
+.flowblocs-node-content {
   display: flex;
   flex-direction: column;
   max-height: 600px;
   overflow: hidden;
 }
 
-.node-properties {
+.flowblocs-node-properties {
   padding: 0.75rem;
   border-bottom: 1px solid var(--border-light, #f3f4f6);
   background: var(--properties-bg, #f8f9fa);
 }
 
-.content-area {
+.flowblocs-content-area {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -118,15 +131,45 @@
 }
 
 /* Loading State */
-.loading {
+.flowblocs-loading {
   padding: 2rem;
   text-align: center;
   color: var(--text-secondary, #6b7280);
   font-style: italic;
 }
 
+/* Content Header (for read-only mode) */
+.flowblocs-content-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+  background: var(--content-header-bg, #fafafa);
+}
+
+.flowblocs-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--edit-btn-border, #d1d5db);
+  background: var(--edit-btn-bg, #ffffff);
+  color: var(--edit-btn-color, #374151);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.flowblocs-edit-btn:hover {
+  background: var(--edit-btn-hover-bg, #f3f4f6);
+  border-color: var(--edit-btn-hover-border, #9ca3af);
+}
+
 /* Editor Header */
-.editor-header {
+.flowblocs-editor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -136,36 +179,51 @@
   font-size: 0.875rem;
 }
 
-.editor-title {
+.flowblocs-editor-title {
   font-weight: 600;
   color: var(--editor-title-color, #059669);
 }
 
-.editor-actions {
+.flowblocs-editor-actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.save-btn {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid var(--save-btn-border, #10b981);
-  background: var(--save-btn-bg, #10b981);
-  color: white;
-  border-radius: 4px;
+.flowblocs-save-btn,
+.flowblocs-cancel-btn {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.15s ease;
+  border: 1px solid;
 }
 
-.save-btn:hover:not(:disabled) {
+.flowblocs-save-btn {
+  border-color: var(--save-btn-border, #10b981);
+  background: var(--save-btn-bg, #10b981);
+  color: white;
+}
+
+.flowblocs-save-btn:hover:not(:disabled) {
   background: var(--save-btn-hover, #059669);
 }
 
-.save-btn:disabled {
+.flowblocs-save-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.flowblocs-cancel-btn {
+  border-color: var(--cancel-btn-border, #d1d5db);
+  background: var(--cancel-btn-bg, #ffffff);
+  color: var(--cancel-btn-color, #374151);
+}
+
+.flowblocs-cancel-btn:hover {
+  background: var(--cancel-btn-hover, #f3f4f6);
 }
 
 /* Save Status */
@@ -198,7 +256,7 @@
 }
 
 /* Content Editor */
-.content-editor {
+.flowblocs-content-editor {
   padding: 1rem;
   flex: 1;
   overflow-y: auto;
@@ -214,13 +272,13 @@
   max-height: 400px;
 }
 
-.content-editor:focus {
+.flowblocs-content-editor:focus {
   outline: 2px solid var(--editor-focus, #10b981);
   outline-offset: -2px;
 }
 
 /* Content Display (Read-only) */
-.content-display {
+.flowblocs-content-display {
   padding: 1rem;
   flex: 1;
   overflow-y: auto;
@@ -231,56 +289,56 @@
 }
 
 /* Content Styling */
-.content-editor h1,
-.content-display h1 {
+.flowblocs-content-editor h1,
+.flowblocs-content-display h1 {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0.5rem 0;
   color: var(--heading-color, #1f2937);
 }
 
-.content-editor h2,
-.content-display h2 {
+.flowblocs-content-editor h2,
+.flowblocs-content-display h2 {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0.5rem 0;
   color: var(--heading-color, #1f2937);
 }
 
-.content-editor h3,
-.content-display h3 {
+.flowblocs-content-editor h3,
+.flowblocs-content-display h3 {
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0.5rem 0;
   color: var(--heading-color, #1f2937);
 }
 
-.content-editor p,
-.content-display p {
+.flowblocs-content-editor p,
+.flowblocs-content-display p {
   margin: 0.5rem 0;
   line-height: 1.6;
 }
 
-.content-editor ul,
-.content-display ul {
+.flowblocs-content-editor ul,
+.flowblocs-content-display ul {
   margin: 0.5rem 0;
   padding-left: 1.5rem;
 }
 
-.content-editor ol,
-.content-display ol {
+.flowblocs-content-editor ol,
+.flowblocs-content-display ol {
   margin: 0.5rem 0;
   padding-left: 1.5rem;
 }
 
-.content-editor li,
-.content-display li {
+.flowblocs-content-editor li,
+.flowblocs-content-display li {
   margin: 0.25rem 0;
   line-height: 1.5;
 }
 
-.content-editor blockquote,
-.content-display blockquote {
+.flowblocs-content-editor blockquote,
+.flowblocs-content-display blockquote {
   margin: 0.75rem 0;
   padding: 0.5rem 1rem;
   border-left: 4px solid var(--quote-border, #e5e7eb);
@@ -288,8 +346,8 @@
   font-style: italic;
 }
 
-.content-editor pre,
-.content-display pre {
+.flowblocs-content-editor pre,
+.flowblocs-content-display pre {
   margin: 0.75rem 0;
   padding: 0.75rem;
   background: var(--code-bg, #f3f4f6);
@@ -299,8 +357,8 @@
   font-size: 0.85rem;
 }
 
-.content-editor code,
-.content-display code {
+.flowblocs-content-editor code,
+.flowblocs-content-display code {
   background: var(--inline-code-bg, #f3f4f6);
   padding: 0.1rem 0.3rem;
   border-radius: 3px;
@@ -308,8 +366,8 @@
   font-size: 0.85rem;
 }
 
-.content-editor hr,
-.content-display hr {
+.flowblocs-content-editor hr,
+.flowblocs-content-display hr {
   margin: 1rem 0;
   border: none;
   border-top: 2px solid var(--divider-color, #e5e7eb);
@@ -328,7 +386,7 @@
 }
 
 /* Editor Help */
-.editor-help {
+.flowblocs-editor-help {
   padding: 0.5rem 1rem;
   background: var(--help-bg, #f8f9fa);
   border-top: 1px solid var(--border-light, #f3f4f6);
@@ -339,92 +397,116 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .notion-node {
+  .flowblocs-node {
     min-width: 200px;
     max-width: 300px;
   }
   
-  .notion-node.expanded {
+  .flowblocs-node.expanded {
     min-width: 250px;
     max-width: 350px;
   }
   
-  .content-editor,
-  .content-display {
+  .flowblocs-content-editor,
+  .flowblocs-content-display {
     max-height: 250px;
     font-size: 0.85rem;
   }
   
-  .editor-header {
+  .flowblocs-editor-header {
     flex-direction: column;
     gap: 0.25rem;
     align-items: flex-start;
   }
   
-  .editor-actions {
+  .flowblocs-editor-actions {
     align-self: flex-end;
+  }
+  
+  .flowblocs-node-actions {
+    gap: 0.125rem;
+  }
+  
+  .flowblocs-action-btn {
+    width: 28px;
+    height: 28px;
   }
 }
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
-  .notion-node {
+  .flowblocs-node {
     background: var(--node-bg-dark, #1f2937);
     border-color: var(--node-border-dark, #374151);
     color: var(--text-primary-dark, #f9fafb);
   }
   
-  .node-header {
+  .flowblocs-node-header {
     background: var(--node-header-bg-dark, #111827);
     border-color: var(--node-border-dark, #374151);
   }
   
-  .title-text {
+  .flowblocs-title-text {
     color: var(--text-primary-dark, #f9fafb);
   }
   
-  .content-editor {
+  .flowblocs-content-editor {
     background: var(--editor-bg-dark, #1f2937);
     color: var(--text-primary-dark, #f9fafb);
   }
   
-  .action-btn {
+  .flowblocs-action-btn {
     color: var(--text-secondary-dark, #9ca3af);
   }
   
-  .action-btn:hover {
+  .flowblocs-action-btn:hover {
     background: var(--btn-hover-bg-dark, #374151);
     color: var(--text-primary-dark, #f9fafb);
+  }
+  
+  .flowblocs-edit-btn {
+    background: var(--edit-btn-bg-dark, #374151);
+    border-color: var(--edit-btn-border-dark, #4b5563);
+    color: var(--edit-btn-color-dark, #f9fafb);
   }
 }
 
 /* Animation for expanding */
-.notion-node {
+.flowblocs-node {
   transition: width 0.3s ease, height 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
 }
 
-.content-area {
+.flowblocs-content-area {
   transition: max-height 0.3s ease;
 }
 
 /* Custom scrollbar for content areas */
-.content-editor::-webkit-scrollbar,
-.content-display::-webkit-scrollbar {
+.flowblocs-content-editor::-webkit-scrollbar,
+.flowblocs-content-display::-webkit-scrollbar {
   width: 6px;
 }
 
-.content-editor::-webkit-scrollbar-track,
-.content-display::-webkit-scrollbar-track {
+.flowblocs-content-editor::-webkit-scrollbar-track,
+.flowblocs-content-display::-webkit-scrollbar-track {
   background: var(--scrollbar-track, #f1f5f9);
 }
 
-.content-editor::-webkit-scrollbar-thumb,
-.content-display::-webkit-scrollbar-thumb {
+.flowblocs-content-editor::-webkit-scrollbar-thumb,
+.flowblocs-content-display::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb, #cbd5e1);
   border-radius: 3px;
 }
 
-.content-editor::-webkit-scrollbar-thumb:hover,
-.content-display::-webkit-scrollbar-thumb:hover {
+.flowblocs-content-editor::-webkit-scrollbar-thumb:hover,
+.flowblocs-content-display::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover, #94a3b8);
+}
+
+/* Icon adjustments for proper alignment */
+.flowblocs-action-btn svg {
+  display: block;
+}
+
+.flowblocs-edit-btn svg {
+  flex-shrink: 0;
 }
