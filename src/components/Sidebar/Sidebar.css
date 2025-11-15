@@ -261,6 +261,100 @@
   color: var(--text-primary);
 }
 
+/* Canvas Controls */
+.canvas-controls {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.clear-canvas-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.clear-canvas-btn:hover:not(.disabled) {
+  background-color: var(--accent-danger-bg);
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+}
+
+.clear-canvas-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Clear Canvas Confirmation Popup */
+.clear-confirm-popup {
+  margin: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.clear-confirm-popup p {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.clear-confirm-popup small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  display: block;
+  margin-bottom: var(--spacing-md);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+.confirm-actions .cancel-btn,
+.confirm-actions .clear-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.confirm-actions .cancel-btn {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.confirm-actions .cancel-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.confirm-actions .clear-btn {
+  background-color: var(--accent-danger);
+  color: white;
+}
+
+.confirm-actions .clear-btn:hover {
+  background-color: var(--accent-danger-hover);
+}
+
 .database-list {
   padding: var(--spacing-sm);
 }
