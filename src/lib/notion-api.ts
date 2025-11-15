@@ -23,12 +23,23 @@ export interface NotionPage {
   depthLevel?: number;
   objectType?: 'page' | 'database';
   lastSynced?: string;
+  // New property for structured display
+  formattedProperties?: FormattedProperty[];
 }
 
 export interface NotionBlock {
   id: string;
   type: string;
   [key: string]: any;
+}
+
+export interface FormattedProperty {
+  name: string;
+  type: string;
+  value: string | string[];
+  displayValue: string;
+  color?: string;
+  url?: string;
 }
 
 const extractIcon = (icon: any): string | undefined => {
@@ -43,7 +54,6 @@ const extractIcon = (icon: any): string | undefined => {
  * Extract title from database object (different structure than pages)
  */
 const extractDatabaseTitle = (database: any): string => {
-  // For databases, title is an array of rich text objects
   if (database.title && Array.isArray(database.title) && database.title.length > 0) {
     const firstTitle = database.title[0];
     if (firstTitle.plain_text) {
@@ -65,7 +75,6 @@ const extractPageTitle = (properties: any, fallback: string = 'Untitled'): strin
     return fallback;
   }
 
-  // Find the title property (there's always exactly one per database)
   const titleProperty = Object.values(properties).find(
     (prop: any) => prop?.type === 'title'
   ) as any;
@@ -78,7 +87,6 @@ const extractPageTitle = (properties: any, fallback: string = 'Untitled'): strin
     }
   }
 
-  // Fallback: check common property names
   const commonNames = ['Name', 'Title', 'title', 'name'];
   for (const propName of commonNames) {
     const prop = properties[propName];
@@ -91,6 +99,293 @@ const extractPageTitle = (properties: any, fallback: string = 'Untitled'): strin
   console.warn('⚠️ Could not extract title from properties:', Object.keys(properties));
   return fallback;
 };
+
+/**
+ * Extract rich text content from Notion rich text array
+ */
+const extractRichText = (richTextArray: any[]): string => {
+  if (!richTextArray || !Array.isArray(richTextArray)) return '';
+  return richTextArray.map(item => item.plain_text || '').join('');
+};
+
+/**
+ * Format a single page property for display
+ */
+const formatProperty = (propertyName: string, property: any): FormattedProperty | null => {
+  if (!property || !property.type) return null;
+
+  const base: FormattedProperty = {
+    name: propertyName,
+    type: property.type,
+    value: '',
+    displayValue: '',
+  };
+
+  switch (property.type) {
+    case 'title':
+      if (property.title && Array.isArray(property.title)) {
+        base.value = extractRichText(property.title);
+        base.displayValue = base.value;
+      }
+      break;
+
+    case 'rich_text':
+      if (property.rich_text && Array.isArray(property.rich_text)) {
+        base.value = extractRichText(property.rich_text);
+        base.displayValue = base.value || '(Empty)';
+      }
+      break;
+
+    case 'number':
+      if (property.number !== null && property.number !== undefined) {
+        base.value = property.number.toString();
+        base.displayValue = property.number.toString();
+      } else {
+        base.displayValue = '(Not set)';
+      }
+      break;
+
+    case 'select':
+      if (property.select) {
+        base.value = property.select.name;
+        base.displayValue = property.select.name;
+        base.color = property.select.color;
+      } else {
+        base.displayValue = '(Not selected)';
+      }
+      break;
+
+    case 'multi_select':
+      if (property.multi_select && Array.isArray(property.multi_select)) {
+        const values = property.multi_select.map((item: any) => item.name);
+        base.value = values;
+        base.displayValue = values.length > 0 ? values.join(', ') : '(No tags)';
+        
+        // Store colors for individual tags
+        const colors = property.multi_select.map((item: any) => item.color);
+        base.color = colors.length > 0 ? colors[0] : undefined; // Use first color for simplicity
+      } else {
+        base.displayValue = '(No tags)';
+      }
+      break;
+
+    case 'date':
+      if (property.date) {
+        let dateStr = property.date.start;
+        if (property.date.end) {
+          dateStr += ` → ${property.date.end}`;
+        }
+        base.value = dateStr;
+        base.displayValue = dateStr;
+      } else {
+        base.displayValue = '(No date)';
+      }
+      break;
+
+    case 'people':
+      if (property.people && Array.isArray(property.people)) {
+        const names = property.people.map((person: any) => person.name || 'Unknown');
+        base.value = names;
+        base.displayValue = names.length > 0 ? names.join(', ') : '(No people)';
+      } else {
+        base.displayValue = '(No people)';
+      }
+      break;
+
+    case 'files':
+      if (property.files && Array.isArray(property.files)) {
+        const fileNames = property.files.map((file: any) => file.name || 'File');
+        base.value = fileNames;
+        base.displayValue = fileNames.length > 0 ? `${fileNames.length} file(s)` : '(No files)';
+      } else {
+        base.displayValue = '(No files)';
+      }
+      break;
+
+    case 'checkbox':
+      base.value = property.checkbox ? 'true' : 'false';
+      base.displayValue = property.checkbox ? '✅ Yes' : '❌ No';
+      break;
+
+    case 'url':
+      if (property.url) {
+        base.value = property.url;
+        base.displayValue = property.url;
+        base.url = property.url;
+      } else {
+        base.displayValue = '(No URL)';
+      }
+      break;
+
+    case 'email':
+      if (property.email) {
+        base.value = property.email;
+        base.displayValue = property.email;
+      } else {
+        base.displayValue = '(No email)';
+      }
+      break;
+
+    case 'phone_number':
+      if (property.phone_number) {
+        base.value = property.phone_number;
+        base.displayValue = property.phone_number;
+      } else {
+        base.displayValue = '(No phone)';
+      }
+      break;
+
+    case 'formula':
+      if (property.formula) {
+        // Formula results can be various types
+        if (property.formula.type === 'string') {
+          base.value = property.formula.string || '';
+          base.displayValue = property.formula.string || '(Empty)';
+        } else if (property.formula.type === 'number') {
+          base.value = property.formula.number?.toString() || '';
+          base.displayValue = property.formula.number?.toString() || '(No result)';
+        } else if (property.formula.type === 'boolean') {
+          base.value = property.formula.boolean ? 'true' : 'false';
+          base.displayValue = property.formula.boolean ? '✅ True' : '❌ False';
+        }
+      } else {
+        base.displayValue = '(No result)';
+      }
+      break;
+
+    case 'relation':
+      if (property.relation && Array.isArray(property.relation)) {
+        base.value = property.relation.map((rel: any) => rel.id);
+        base.displayValue = property.relation.length > 0 
+          ? `${property.relation.length} relation(s)`
+          : '(No relations)';
+      } else {
+        base.displayValue = '(No relations)';
+      }
+      break;
+
+    case 'rollup':
+      if (property.rollup) {
+        // Rollup results can be various types
+        if (property.rollup.type === 'array') {
+          const arrayLength = property.rollup.array?.length || 0;
+          base.displayValue = `${arrayLength} item(s)`;
+        } else if (property.rollup.type === 'number') {
+          base.value = property.rollup.number?.toString() || '';
+          base.displayValue = property.rollup.number?.toString() || '(No result)';
+        }
+      } else {
+        base.displayValue = '(No rollup)';
+      }
+      break;
+
+    case 'created_time':
+      base.value = property.created_time;
+      base.displayValue = new Date(property.created_time).toLocaleString();
+      break;
+
+    case 'created_by':
+      if (property.created_by) {
+        base.value = property.created_by.name || 'Unknown';
+        base.displayValue = property.created_by.name || 'Unknown';
+      }
+      break;
+
+    case 'last_edited_time':
+      base.value = property.last_edited_time;
+      base.displayValue = new Date(property.last_edited_time).toLocaleString();
+      break;
+
+    case 'last_edited_by':
+      if (property.last_edited_by) {
+        base.value = property.last_edited_by.name || 'Unknown';
+        base.displayValue = property.last_edited_by.name || 'Unknown';
+      }
+      break;
+
+    default:
+      base.displayValue = `(${property.type})`;
+      console.warn(`⚠️ Unsupported property type: ${property.type}`);
+  }
+
+  return base;
+};
+
+/**
+ * Format all properties of a page for display
+ */
+export const formatPageProperties = (properties: Record<string, any>): FormattedProperty[] => {
+  if (!properties) return [];
+
+  const formatted: FormattedProperty[] = [];
+  
+  Object.entries(properties).forEach(([name, property]) => {
+    const formattedProp = formatProperty(name, property);
+    if (formattedProp) {
+      formatted.push(formattedProp);
+    }
+  });
+
+  // Sort properties: title first, then alphabetically
+  formatted.sort((a, b) => {
+    if (a.type === 'title') return -1;
+    if (b.type === 'title') return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  return formatted;
+};
+
+/**
+ * Get summary information for a page (tags, key properties, etc.)
+ */
+export const getPageSummary = (page: NotionPage): {
+  title: string;
+  tags: string[];
+  status?: string;
+  priority?: string;
+  assignee?: string;
+  dueDate?: string;
+  keyProperties: FormattedProperty[];
+} => {
+  const formatted = formatPageProperties(page.properties);
+  
+  const summary = {
+    title: page.title,
+    tags: [] as string[],
+    keyProperties: [] as FormattedProperty[],
+  };
+
+  formatted.forEach(prop => {
+    // Extract common property types
+    if (prop.type === 'multi_select') {
+      if (Array.isArray(prop.value)) {
+        summary.tags.push(...prop.value);
+      }
+    }
+    
+    // Check for common property names
+    const lowerName = prop.name.toLowerCase();
+    if (lowerName.includes('status') && prop.type === 'select') {
+      (summary as any).status = prop.displayValue;
+    } else if (lowerName.includes('priority') && prop.type === 'select') {
+      (summary as any).priority = prop.displayValue;
+    } else if ((lowerName.includes('assign') || lowerName.includes('owner')) && prop.type === 'people') {
+      (summary as any).assignee = prop.displayValue;
+    } else if ((lowerName.includes('due') || lowerName.includes('deadline')) && prop.type === 'date') {
+      (summary as any).dueDate = prop.displayValue;
+    }
+
+    // Include non-empty, non-title properties as key properties
+    if (prop.type !== 'title' && prop.displayValue && !prop.displayValue.includes('(') && !prop.displayValue.includes('No ')) {
+      summary.keyProperties.push(prop);
+    }
+  });
+
+  return summary;
+};
+
+// ... rest of the existing functions remain the same ...
 
 /**
  * Make a request through Supabase proxy to avoid CORS issues
@@ -197,23 +492,27 @@ export const queryDatabase = async (
     const title = extractPageTitle(page.properties, 'Untitled Page');
     console.log(`📄 Processing page: ${title} (${page.id})`);
     
-    // Log properties for debugging
+    // Format properties for display
+    const formattedProperties = formatPageProperties(page.properties);
+    
     if (!title || title === 'Untitled Page') {
       console.warn(`⚠️ Page ${page.id} has no valid title. Properties:`, Object.keys(page.properties || {}));
-      // Log the actual property structures for debugging
       Object.entries(page.properties || {}).forEach(([key, prop]) => {
         console.log(`  Property "${key}":`, prop);
       });
     }
 
-    return {
+    const processedPage: NotionPage = {
       id: page.id,
       title,
       icon: extractIcon(page.icon),
       cover: page.cover,
       properties: page.properties,
       url: page.url,
+      formattedProperties, // Add formatted properties
     };
+
+    return processedPage;
   });
 
   console.log(`✅ Successfully processed ${results.length} pages`);
@@ -224,6 +523,8 @@ export const queryDatabase = async (
     nextCursor: response.next_cursor,
   };
 };
+
+// ... rest of the existing functions remain the same ...
 
 export const getPageBlocks = async (pageId: string): Promise<NotionBlock[]> => {
   console.log(`📖 Fetching blocks for page: ${pageId}`);
@@ -280,6 +581,7 @@ export const getPageChildren = async (pageId: string): Promise<NotionPage[]> => 
         url: pageResponse.url,
         parentId: pageId,
         objectType: 'page',
+        formattedProperties: formatPageProperties(pageResponse.properties),
       });
     } catch (error) {
       console.error(`Failed to fetch child page ${block.id}:`, error);
@@ -321,6 +623,7 @@ export const getPageHierarchy = async (
       depthLevel: currentDepth,
       objectType: 'page',
       children: [],
+      formattedProperties: formatPageProperties(pageResponse.properties),
     };
 
     if (currentDepth < maxDepth) {
