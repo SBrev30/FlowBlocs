@@ -23,9 +23,10 @@ const nodeTypes = {
 
 interface CanvasContainerProps {
   onDrop: (page: NotionPage, position: { x: number; y: number }) => Promise<NotionBlock[]>;
+  onClearCanvas: () => void;
 }
 
-const CanvasContainer = ({ onDrop }: CanvasContainerProps) => {
+const CanvasContainer = ({ onDrop, onClearCanvas }: CanvasContainerProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -87,6 +88,12 @@ const CanvasContainer = ({ onDrop }: CanvasContainerProps) => {
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
   };
+
+  const clearCanvas = useCallback(() => {
+    setNodes([]);
+    setEdges([]);
+    onClearCanvas();
+  }, [setNodes, setEdges, onClearCanvas]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
