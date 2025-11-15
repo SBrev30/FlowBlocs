@@ -283,7 +283,7 @@
 
 /* Content Editor */
 .flowblocs-content-editor {
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   flex: 1;
   overflow-y: auto;
   border: none;
@@ -312,7 +312,7 @@
 
 /* Content Display (Read-only) */
 .flowblocs-content-display {
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   flex: 1;
   overflow-y: auto;
   font-size: 0.9rem;
@@ -525,7 +525,7 @@
 /* Custom scrollbar for content areas */
 .flowblocs-content-editor::-webkit-scrollbar,
 .flowblocs-content-display::-webkit-scrollbar {
-  width: 6px;
+  width: 10px;
 }
 
 .flowblocs-content-editor::-webkit-scrollbar-track,
