@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Database, ChevronRight, ChevronDown, Loader2, RefreshCw, Search, X } from "lucide-react";
+import { Database, ChevronRight, ChevronDown, Loader2, RefreshCw, Search, X, Trash2 } from "lucide-react";
 import { GoSidebarCollapse } from "react-icons/go";
 import { getCurrentUser } from "../../lib/notion-api";
 import { getAuthToken } from "../../lib/storage";
@@ -12,9 +12,11 @@ interface SidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
   onDragStart: (page: NotionPage, databaseId: string) => void;
+  onClearCanvas: () => void;
+  canvasNodeCount: number;
 }
 
-const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
+const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNodeCount }: SidebarProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -23,6 +25,7 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
   const [loadingPages, setLoadingPages] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredDatabases, setFilteredDatabases] = useState<NotionDatabase[]>([]);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const {
     databases,
@@ -101,6 +104,16 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
     } else {
       setFilteredDatabases(databases);
     }
+  };
+
+  const handleClearCanvas = () => {
+    if (canvasNodeCount === 0) return;
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearCanvas = () => {
+    onClearCanvas();
+    setShowClearConfirm(false);
   };
 
   const toggleDatabase = async (databaseId: string) => {
@@ -202,6 +215,39 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart }: SidebarProps) => {
               </button>
             )}
           </div>
+
+          <div className="canvas-controls">
+            <button
+              className={`clear-canvas-btn ${canvasNodeCount === 0 ? 'disabled' : ''}`}
+              onClick={handleClearCanvas}
+              disabled={canvasNodeCount === 0}
+              title={canvasNodeCount === 0 ? 'No nodes to clear' : `Clear all ${canvasNodeCount} nodes from canvas`}
+            >
+              <Trash2 size={14} />
+              Clear Canvas ({canvasNodeCount})
+            </button>
+          </div>
+
+          {showClearConfirm && (
+            <div className="clear-confirm-popup">
+              <p>Remove all {canvasNodeCount} nodes from canvas?</p>
+              <small>This will only clear the canvas, not delete from Notion.</small>
+              <div className="confirm-actions">
+                <button 
+                  className="cancel-btn"
+                  onClick={() => setShowClearConfirm(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="clear-btn"
+                  onClick={confirmClearCanvas}
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <div className="loading-state">
