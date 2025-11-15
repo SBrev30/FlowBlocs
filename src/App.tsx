@@ -11,6 +11,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCallback, setIsCallback] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [canvasNodeCount, setCanvasNodeCount] = useState(0);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -49,6 +50,9 @@ function App() {
   const handleDrop = async (page: NotionPage, position: { x: number; y: number }): Promise<NotionBlock[]> => {
     console.log('Page dropped:', page.title, 'at position:', position);
 
+    // Increment node count when a new node is added
+    setCanvasNodeCount(prev => prev + 1);
+
     try {
       const token = await getAuthToken();
       if (!token) {
@@ -64,6 +68,11 @@ function App() {
       console.error('Failed to fetch page content:', error);
       return [];
     }
+  };
+
+  const handleClearCanvas = () => {
+    console.log('Clearing canvas');
+    setCanvasNodeCount(0);
   };
 
   if (isLoading) {
@@ -89,8 +98,13 @@ function App() {
         isCollapsed={isSidebarCollapsed}
         onToggle={toggleSidebar}
         onDragStart={handleDragStart}
+        onClearCanvas={handleClearCanvas}
+        canvasNodeCount={canvasNodeCount}
       />
-      <Canvas onDrop={handleDrop} />
+      <Canvas 
+        onDrop={handleDrop} 
+        onClearCanvas={handleClearCanvas}
+      />
     </div>
   );
 }
