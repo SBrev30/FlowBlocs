@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Database, ChevronRight, ChevronDown, Loader2, RefreshCw, Search, X, Trash2 } from "lucide-react";
 import { GoSidebarCollapse } from "react-icons/go";
 import { getCurrentUser } from "../../lib/notion-api";
@@ -14,6 +14,8 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ onDragStart }: SidebarProps) => {
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  
   const { isAuthenticated, accessToken, user, setAuth, clearAuth } = useAuth();
   const { 
     filteredDatabases, 
@@ -86,6 +88,16 @@ const Sidebar = ({ onDragStart }: SidebarProps) => {
     if (query.trim() && databases.length > 0) {
       await searchDatabasesService(query);
     }
+  };
+
+  const handleClearCanvas = () => {
+    if (canvasNodes.length === 0) return;
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearCanvas = () => {
+    clearCanvas();
+    setShowClearConfirm(false);
   };
 
   const handleToggleDatabase = async (databaseId: string) => {
@@ -176,7 +188,7 @@ const Sidebar = ({ onDragStart }: SidebarProps) => {
           <div className="canvas-controls">
             <button
               className={`clear-canvas-btn ${canvasNodes.length === 0 ? 'disabled' : ''}`}
-              onClick={clearCanvas}
+              onClick={handleClearCanvas}
               disabled={canvasNodes.length === 0}
               title={canvasNodes.length === 0 ? 'No nodes to clear' : `Clear all ${canvasNodes.length} nodes from canvas`}
             >
@@ -184,6 +196,27 @@ const Sidebar = ({ onDragStart }: SidebarProps) => {
               Clear Canvas ({canvasNodes.length})
             </button>
           </div>
+
+          {showClearConfirm && (
+            <div className="clear-confirm-popup">
+              <p>Remove all {canvasNodes.length} nodes from canvas?</p>
+              <small>This will only clear the canvas, not delete from Notion.</small>
+              <div className="confirm-actions">
+                <button 
+                  className="cancel-btn"
+                  onClick={() => setShowClearConfirm(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="clear-btn"
+                  onClick={confirmClearCanvas}
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          )}
 
           {loadingDatabases ? (
             <div className="loading-state">
