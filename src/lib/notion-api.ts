@@ -39,29 +39,53 @@ const extractIcon = (icon: any): string | undefined => {
   return undefined;
 };
 
-const extractTitle = (properties: any, fallback: string = 'Untitled'): string => {
+/**
+ * Extract title from database object (different structure than pages)
+ */
+const extractDatabaseTitle = (database: any): string => {
+  // For databases, title is an array of rich text objects
+  if (database.title && Array.isArray(database.title) && database.title.length > 0) {
+    const firstTitle = database.title[0];
+    if (firstTitle.plain_text) {
+      console.log('✅ Database title extracted:', firstTitle.plain_text);
+      return firstTitle.plain_text;
+    }
+  }
+  
+  console.warn('⚠️ Could not extract database title, using fallback');
+  return 'Untitled Database';
+};
+
+/**
+ * Extract title from page properties (different structure than database titles)
+ */
+const extractPageTitle = (properties: any, fallback: string = 'Untitled'): string => {
   if (!properties) {
     console.warn('⚠️ No properties object provided for title extraction');
     return fallback;
   }
 
-  const propertyNames = ['Name', 'Title', 'title', 'name'];
-
-  for (const propName of propertyNames) {
-    const prop = properties[propName];
-    if (prop && prop.type === 'title' && prop.title?.[0]?.plain_text) {
-      console.log(`✅ Found title in property "${propName}":`, prop.title[0].plain_text);
-      return prop.title[0].plain_text;
-    }
-  }
-
+  // Find the title property (there's always exactly one per database)
   const titleProperty = Object.values(properties).find(
     (prop: any) => prop?.type === 'title'
   ) as any;
 
-  if (titleProperty?.title?.[0]?.plain_text) {
-    console.log('✅ Found title via type search:', titleProperty.title[0].plain_text);
-    return titleProperty.title[0].plain_text;
+  if (titleProperty?.title && Array.isArray(titleProperty.title) && titleProperty.title.length > 0) {
+    const firstTitle = titleProperty.title[0];
+    if (firstTitle.plain_text) {
+      console.log('✅ Page title extracted:', firstTitle.plain_text);
+      return firstTitle.plain_text;
+    }
+  }
+
+  // Fallback: check common property names
+  const commonNames = ['Name', 'Title', 'title', 'name'];
+  for (const propName of commonNames) {
+    const prop = properties[propName];
+    if (prop?.type === 'title' && prop.title?.[0]?.plain_text) {
+      console.log(`✅ Found title in property "${propName}":`, prop.title[0].plain_text);
+      return prop.title[0].plain_text;
+    }
   }
 
   console.warn('⚠️ Could not extract title from properties:', Object.keys(properties));
@@ -124,8 +148,13 @@ export const searchDatabases = async (): Promise<NotionDatabase[]> => {
     },
   });
 
+  if (!response.results || !Array.isArray(response.results)) {
+    console.warn('⚠️ No databases found or invalid response structure');
+    return [];
+  }
+
   return response.results.map((db: any) => {
-    const title = db.title?.[0]?.plain_text || 'Untitled Database';
+    const title = extractDatabaseTitle(db);
     console.log(`📚 Database found: ${title} (${db.id})`);
     return {
       id: db.id,
@@ -147,15 +176,35 @@ export const queryDatabase = async (
     body.start_cursor = startCursor;
   }
 
+  console.log(`🗂️ Querying database ${databaseId}...`);
   const response = await makeNotionRequest(
     `/databases/${databaseId}/query`,
     'POST',
     body
   );
 
+  if (!response.results || !Array.isArray(response.results)) {
+    console.warn('⚠️ No pages found or invalid response structure');
+    return {
+      results: [],
+      hasMore: false,
+    };
+  }
+
+  console.log(`📄 Raw pages from API:`, response.results.length);
+
   const results = response.results.map((page: any) => {
-    const title = extractTitle(page.properties, 'Untitled Page');
-    console.log(`📄 Page extracted: ${title} (${page.id})`);
+    const title = extractPageTitle(page.properties, 'Untitled Page');
+    console.log(`📄 Processing page: ${title} (${page.id})`);
+    
+    // Log properties for debugging
+    if (!title || title === 'Untitled Page') {
+      console.warn(`⚠️ Page ${page.id} has no valid title. Properties:`, Object.keys(page.properties || {}));
+      // Log the actual property structures for debugging
+      Object.entries(page.properties || {}).forEach(([key, prop]) => {
+        console.log(`  Property "${key}":`, prop);
+      });
+    }
 
     return {
       id: page.id,
@@ -167,6 +216,8 @@ export const queryDatabase = async (
     };
   });
 
+  console.log(`✅ Successfully processed ${results.length} pages`);
+
   return {
     results,
     hasMore: response.has_more,
@@ -175,7 +226,15 @@ export const queryDatabase = async (
 };
 
 export const getPageBlocks = async (pageId: string): Promise<NotionBlock[]> => {
+  console.log(`📖 Fetching blocks for page: ${pageId}`);
   const response = await makeNotionRequest(`/blocks/${pageId}/children`, 'GET');
+  
+  if (!response.results || !Array.isArray(response.results)) {
+    console.warn('⚠️ No blocks found or invalid response structure');
+    return [];
+  }
+  
+  console.log(`✅ Retrieved ${response.results.length} blocks`);
   return response.results;
 };
 
@@ -199,11 +258,13 @@ export const getPageChildren = async (pageId: string): Promise<NotionPage[]> => 
     (block: any) => block.type === 'child_page'
   );
 
+  console.log(`👶 Found ${childPageBlocks.length} child pages for ${pageId}`);
+
   const childPages: NotionPage[] = [];
   for (const block of childPageBlocks) {
     try {
       const pageResponse = await makeNotionRequest(`/pages/${block.id}`, 'GET');
-      const title = extractTitle(
+      const title = extractPageTitle(
         pageResponse.properties,
         block.child_page?.title || 'Untitled Child Page'
       );
@@ -231,7 +292,9 @@ export const getPageChildren = async (pageId: string): Promise<NotionPage[]> => 
 export const checkPageHasChildren = async (pageId: string): Promise<boolean> => {
   try {
     const blocks = await getPageBlocks(pageId);
-    return blocks.some((block: any) => block.type === 'child_page');
+    const hasChildren = blocks.some((block: any) => block.type === 'child_page');
+    console.log(`🔍 Page ${pageId} has children: ${hasChildren}`);
+    return hasChildren;
   } catch (error) {
     console.error(`Failed to check children for page ${pageId}:`, error);
     return false;
@@ -245,7 +308,7 @@ export const getPageHierarchy = async (
 ): Promise<NotionPage | null> => {
   try {
     const pageResponse = await makeNotionRequest(`/pages/${pageId}`, 'GET');
-    const title = extractTitle(pageResponse.properties, 'Untitled Page');
+    const title = extractPageTitle(pageResponse.properties, 'Untitled Page');
     console.log(`🌳 Page hierarchy: ${title} at depth ${currentDepth}`);
 
     const page: NotionPage = {
@@ -279,5 +342,34 @@ export const getPageHierarchy = async (
   } catch (error) {
     console.error(`Failed to fetch page hierarchy for ${pageId}:`, error);
     return null;
+  }
+};
+
+/**
+ * Utility function to validate if a page has a proper title for drag-and-drop
+ */
+export const isPageValidForDragAndDrop = (page: NotionPage): boolean => {
+  const isValid = !!(page.title && page.title.trim() && page.title !== 'Untitled' && page.title !== 'Untitled Page');
+  if (!isValid) {
+    console.warn(`⚠️ Page ${page.id} is not valid for drag-and-drop: title="${page.title}"`);
+  }
+  return isValid;
+};
+
+/**
+ * Debug function to log the structure of a page's properties
+ */
+export const debugPageProperties = (page: any) => {
+  console.log('🔍 Page Debug Info:');
+  console.log('  ID:', page.id);
+  console.log('  Raw Properties:', page.properties);
+  
+  if (page.properties) {
+    Object.entries(page.properties).forEach(([key, prop]: [string, any]) => {
+      console.log(`  Property "${key}":`, {
+        type: prop.type,
+        value: prop[prop.type],
+      });
+    });
   }
 };
