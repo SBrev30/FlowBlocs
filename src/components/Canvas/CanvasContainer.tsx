@@ -3,16 +3,20 @@ import ReactFlow, {
   Node,
   Background,
   Controls,
-  useNodesState,
-  useEdgesState,
   addEdge,
   Connection,
   BackgroundVariant,
   Panel,
+  NodeChange,
+  applyNodeChanges,
+  EdgeChange,
+  applyEdgeChanges,
+  Edge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { NotionPage, NotionBlock } from '../../lib/notion-sidebar-integration';
 import { saveCanvasState, getCanvasState } from '../../lib/storage';
+import { useCanvas } from '../../store/appStore';
 import NotionNode from './NotionNode';
 import { Moon, Sun, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import './Canvas.css';
@@ -23,17 +27,14 @@ const nodeTypes = {
 
 interface CanvasContainerProps {
   onDrop: (page: NotionPage, position: { x: number; y: number }) => Promise<NotionBlock[]>;
-  onClearCanvas: () => void;
-  onNodeCountChange: (count: number) => void;
 }
 
-const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasContainerProps) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+const CanvasContainer = ({ onDrop }: CanvasContainerProps) => {
+  const { canvasNodes, setCanvasNodes, updateCanvasNode, removeCanvasNode, clearCanvas } = useCanvas();
+  const [edges, setEdges] = useState<Edge[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [clearTrigger, setClearTrigger] = useState(0);
 
   useEffect(() => {
     loadCanvasState();
@@ -54,25 +55,27 @@ const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasCon
     return () => {
       if (timeout) clearTimeout(timeout);
     };
-  }, [nodes, edges]);
+  }, [canvasNodes, edges]);
 
-  // Update parent with current node count whenever nodes change
+  // Listen for deleteNode custom event
   useEffect(() => {
-    onNodeCountChange(nodes.length);
-  }, [nodes.length, onNodeCountChange]);
+    const handleDeleteNode = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { nodeId } = customEvent.detail;
+      console.log('🗑️ Deleting node:', nodeId);
+      removeCanvasNode(nodeId);
+    };
 
-  // Listen for clear canvas trigger from parent
-  useEffect(() => {
-    if (clearTrigger > 0) {
-      setNodes([]);
-      setEdges([]);
-    }
-  }, [clearTrigger, setNodes, setEdges]);
+    window.addEventListener('deleteNode', handleDeleteNode);
+    return () => {
+      window.removeEventListener('deleteNode', handleDeleteNode);
+    };
+  }, [removeCanvasNode]);
 
   const loadCanvasState = async () => {
     const state = await getCanvasState();
     if (state) {
-      setNodes(state.nodes || []);
+      setCanvasNodes(state.nodes || []);
       setEdges(state.edges || []);
       if (state.viewport && reactFlowInstance) {
         reactFlowInstance.setViewport(state.viewport);
@@ -91,7 +94,7 @@ const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasCon
   const saveCanvas = async () => {
     const viewport = reactFlowInstance?.getViewport();
     await saveCanvasState({
-      nodes,
+      nodes: canvasNodes,
       edges,
       viewport,
     });
@@ -104,22 +107,30 @@ const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasCon
     localStorage.setItem('theme', newTheme);
   };
 
-  const clearCanvas = useCallback(() => {
-    setClearTrigger(prev => prev + 1);
-    onClearCanvas();
-  }, [onClearCanvas]);
-
-  // Expose clearCanvas function to parent via ref pattern
-  useEffect(() => {
-    (window as any).clearCanvas = clearCanvas;
-    return () => {
-      delete (window as any).clearCanvas;
-    };
+  const handleClearCanvas = useCallback(() => {
+    console.log('🧹 Clearing canvas - removing all nodes');
+    clearCanvas();
+    setEdges([]);
   }, [clearCanvas]);
+
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      const updatedNodes = applyNodeChanges(changes, canvasNodes);
+      setCanvasNodes(updatedNodes);
+    },
+    [canvasNodes, setCanvasNodes]
+  );
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+    },
+    []
+  );
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    []
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -173,52 +184,36 @@ const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasCon
         position,
         data: {
           page,
-          expanded: false,
+          isExpanded: false,
           loading: true,
           blocks: [],
         },
       };
 
-      setNodes((nds) => nds.concat(newNode));
+      setCanvasNodes([...canvasNodes, newNode]);
 
       try {
         const blocks = await onDrop(page, position);
 
-        setNodes((nds) =>
-          nds.map((node) => {
-            if (node.id === nodeId) {
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  blocks,
-                  loading: false,
-                },
-              };
-            }
-            return node;
-          })
-        );
+        updateCanvasNode(nodeId, {
+          data: {
+            page,
+            blocks,
+            loading: false,
+          },
+        });
       } catch (error) {
         console.error('Failed to load page content:', error);
-        setNodes((nds) =>
-          nds.map((node) => {
-            if (node.id === nodeId) {
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  loading: false,
-                  error: 'Failed to load content',
-                },
-              };
-            }
-            return node;
-          })
-        );
+        updateCanvasNode(nodeId, {
+          data: {
+            page,
+            loading: false,
+            error: 'Failed to load content',
+          },
+        });
       }
     },
-    [reactFlowInstance, onDrop, setNodes]
+    [reactFlowInstance, onDrop, canvasNodes, setCanvasNodes, updateCanvasNode]
   );
 
   const handleZoomIn = () => {
@@ -236,7 +231,7 @@ const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasCon
   return (
     <div className="canvas-container">
       <ReactFlow
-        nodes={nodes}
+        nodes={canvasNodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}

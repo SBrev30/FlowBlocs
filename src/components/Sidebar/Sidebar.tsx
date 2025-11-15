@@ -96,6 +96,7 @@ const Sidebar = ({ onDragStart }: SidebarProps) => {
   };
 
   const confirmClearCanvas = () => {
+    console.log('🗑️ Sidebar: Confirming canvas clear');
     clearCanvas();
     setShowClearConfirm(false);
   };

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { Node } from 'reactflow';
 import { NotionDatabase, NotionPage } from '../lib/notion-sidebar-integration';
 
 interface User {
@@ -8,14 +9,16 @@ interface User {
   avatar_url?: string;
 }
 
-interface CanvasNode {
-  id: string;
-  pageId: string;
-  databaseId: string;
-  title: string;
-  position: { x: number; y: number };
-  data: NotionPage;
+export interface NotionNodeData {
+  page: NotionPage;
+  isExpanded?: boolean;
+  content?: any[];
+  loading?: boolean;
+  error?: string;
+  blocks?: any[];
 }
+
+export type CanvasNode = Node<NotionNodeData>;
 
 interface AppState {
   // Auth state
@@ -52,7 +55,8 @@ interface AppState {
   addCanvasNode: (node: CanvasNode) => void;
   removeCanvasNode: (nodeId: string) => void;
   clearCanvas: () => void;
-  updateNodePosition: (nodeId: string, position: { x: number; y: number }) => void;
+  setCanvasNodes: (nodes: CanvasNode[]) => void;
+  updateCanvasNode: (nodeId: string, updates: Partial<CanvasNode>) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   refreshDatabases: () => void;
 }
@@ -156,19 +160,22 @@ export const useAppStore = create<AppState>()(
       set((state) => ({
         canvasNodes: [...state.canvasNodes, node],
       })),
-    
+
     removeCanvasNode: (nodeId) =>
       set((state) => ({
         canvasNodes: state.canvasNodes.filter(node => node.id !== nodeId),
       })),
-    
+
     clearCanvas: () =>
       set({ canvasNodes: [] }),
-    
-    updateNodePosition: (nodeId, position) =>
+
+    setCanvasNodes: (nodes) =>
+      set({ canvasNodes: nodes }),
+
+    updateCanvasNode: (nodeId, updates) =>
       set((state) => ({
         canvasNodes: state.canvasNodes.map(node =>
-          node.id === nodeId ? { ...node, position } : node
+          node.id === nodeId ? { ...node, ...updates } : node
         ),
       })),
     
@@ -217,7 +224,8 @@ export const useCanvas = () => useAppStore((state) => ({
   addCanvasNode: state.addCanvasNode,
   removeCanvasNode: state.removeCanvasNode,
   clearCanvas: state.clearCanvas,
-  updateNodePosition: state.updateNodePosition,
+  setCanvasNodes: state.setCanvasNodes,
+  updateCanvasNode: state.updateCanvasNode,
 }));
 
 export const useSidebar = () => useAppStore((state) => ({

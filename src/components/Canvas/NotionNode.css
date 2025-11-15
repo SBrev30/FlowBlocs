@@ -1,0 +1,554 @@
+/* NotionNode.css - Updated to avoid conflicts with Canvas.css */
+
+/* Use unique class prefix 'flowblocs-' to avoid conflicts */
+
+.flowblocs-node {
+  min-width: 250px;
+  max-width: 400px;
+  background: var(--node-bg, #ffffff);
+  border: 2px solid var(--node-border, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.flowblocs-node.selected {
+  border-color: var(--node-selected-border, #3b82f6);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.flowblocs-node.expanded {
+  min-width: 350px;
+  max-width: 600px;
+  min-height: 300px;
+  max-height: 1000px;
+}
+
+.flowblocs-node.editing {
+  border-color: var(--node-editing-border, #10b981);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+}
+
+/* Node Header */
+.flowblocs-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: var(--node-header-bg);
+  border-bottom: 1px solid var(--node-border);
+}
+
+.flowblocs-node-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.flowblocs-node-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.flowblocs-title-text {
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flowblocs-node-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.flowblocs-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary, #6b7280);
+  transition: all 0.15s ease;
+}
+
+.flowblocs-action-btn:hover {
+  background: var(--btn-hover-bg, #e5e7eb);
+  color: var(--text-primary, #1f2937);
+}
+
+.flowblocs-action-btn.active,
+.flowblocs-action-btn.expand-btn.active {
+  background: var(--btn-active-bg, #3b82f6);
+  color: white;
+}
+
+.flowblocs-action-btn.notion-btn:hover {
+  background: var(--notion-btn-hover, #dbeafe);
+  color: var(--notion-btn-color, #2563eb);
+}
+
+.flowblocs-action-btn.delete-btn:hover {
+  background: var(--delete-btn-hover, #fee2e2);
+  color: var(--delete-btn-color, #dc2626);
+}
+
+/* Node Summary */
+.flowblocs-node-summary {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+}
+
+/* Node Content (Expanded) */
+.flowblocs-node-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 600px;
+  overflow: hidden;
+}
+
+.flowblocs-node-properties {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--node-header-bg);
+}
+
+.flowblocs-content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Loading State */
+.flowblocs-loading {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary, #6b7280);
+  font-style: italic;
+}
+
+/* Content Header (for read-only mode) */
+.flowblocs-content-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fafafa;
+}
+
+[data-theme="dark"] .flowblocs-content-header {
+  border-bottom-color: #374151;
+  background: #1f2937;
+}
+
+.flowblocs-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.flowblocs-edit-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+[data-theme="dark"] .flowblocs-edit-btn {
+  border-color: #4b5563;
+  background: #374151;
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .flowblocs-edit-btn:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+/* Editor Header */
+.flowblocs-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: #ecfdf5;
+  border-bottom: 1px solid #10b981;
+  font-size: 0.875rem;
+}
+
+[data-theme="dark"] .flowblocs-editor-header {
+  background: #064e3b;
+  border-bottom-color: #10b981;
+}
+
+.flowblocs-editor-title {
+  font-weight: 600;
+  color: #059669;
+}
+
+[data-theme="dark"] .flowblocs-editor-title {
+  color: #34d399;
+}
+
+.flowblocs-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flowblocs-save-btn,
+.flowblocs-cancel-btn {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  border: 1px solid;
+}
+
+.flowblocs-save-btn {
+  border-color: var(--save-btn-border, #10b981);
+  background: var(--save-btn-bg, #10b981);
+  color: white;
+}
+
+.flowblocs-save-btn:hover:not(:disabled) {
+  background: var(--save-btn-hover, #059669);
+}
+
+.flowblocs-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.flowblocs-cancel-btn {
+  border-color: var(--cancel-btn-border, #d1d5db);
+  background: var(--cancel-btn-bg, #ffffff);
+  color: var(--cancel-btn-color, #374151);
+}
+
+.flowblocs-cancel-btn:hover {
+  background: var(--cancel-btn-hover, #f3f4f6);
+}
+
+/* Save Status */
+.save-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.save-status.saving {
+  background: var(--status-saving-bg, #dbeafe);
+  color: var(--status-saving-text, #2563eb);
+}
+
+.save-status.saved {
+  background: var(--status-saved-bg, #dcfce7);
+  color: var(--status-saved-text, #16a34a);
+}
+
+.save-status.error {
+  background: var(--status-error-bg, #fee2e2);
+  color: var(--status-error-text, #dc2626);
+}
+
+.save-status.unsaved {
+  background: var(--status-unsaved-bg, #fef3c7);
+  color: var(--status-unsaved-text, #d97706);
+}
+
+/* Content Editor */
+.flowblocs-content-editor {
+  padding: 1rem 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #1f2937;
+  background: #ffffff;
+  resize: none;
+  min-height: 200px;
+  max-height: 400px;
+  cursor: text;
+  user-select: text;
+}
+
+[data-theme="dark"] .flowblocs-content-editor {
+  color: #f9fafb;
+  background: #1f2937;
+}
+
+.flowblocs-content-editor:focus {
+  outline: 2px solid #10b981;
+  outline-offset: -2px;
+}
+
+/* Content Display (Read-only) */
+.flowblocs-content-display {
+  padding: 1rem 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #1f2937;
+  max-height: 400px;
+}
+
+[data-theme="dark"] .flowblocs-content-display {
+  color: #f9fafb;
+}
+
+/* Content Styling */
+.flowblocs-content-editor h1,
+.flowblocs-content-display h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+  color: #1f2937;
+}
+
+[data-theme="dark"] .flowblocs-content-editor h1,
+[data-theme="dark"] .flowblocs-content-display h1 {
+  color: #f9fafb;
+}
+
+.flowblocs-content-editor h2,
+.flowblocs-content-display h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  color: #1f2937;
+}
+
+[data-theme="dark"] .flowblocs-content-editor h2,
+[data-theme="dark"] .flowblocs-content-display h2 {
+  color: #f9fafb;
+}
+
+.flowblocs-content-editor h3,
+.flowblocs-content-display h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  color: #1f2937;
+}
+
+[data-theme="dark"] .flowblocs-content-editor h3,
+[data-theme="dark"] .flowblocs-content-display h3 {
+  color: #f9fafb;
+}
+
+.flowblocs-content-editor p,
+.flowblocs-content-display p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.flowblocs-content-editor ul,
+.flowblocs-content-display ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.flowblocs-content-editor ol,
+.flowblocs-content-display ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.flowblocs-content-editor li,
+.flowblocs-content-display li {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+
+.flowblocs-content-editor blockquote,
+.flowblocs-content-display blockquote {
+  margin: 0.75rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid #e5e7eb;
+  background: #f9fafb;
+  font-style: italic;
+}
+
+[data-theme="dark"] .flowblocs-content-editor blockquote,
+[data-theme="dark"] .flowblocs-content-display blockquote {
+  border-left-color: #4b5563;
+  background: #111827;
+}
+
+.flowblocs-content-editor pre,
+.flowblocs-content-display pre {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+}
+
+[data-theme="dark"] .flowblocs-content-editor pre,
+[data-theme="dark"] .flowblocs-content-display pre {
+  background: var(--code-bg);
+}
+
+.flowblocs-content-editor code,
+.flowblocs-content-display code {
+  background: #f3f4f6;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+}
+
+[data-theme="dark"] .flowblocs-content-editor code,
+[data-theme="dark"] .flowblocs-content-display code {
+  background: var(--code-bg);
+}
+
+.flowblocs-content-editor hr,
+.flowblocs-content-display hr {
+  margin: 1rem 0;
+  border: none;
+  border-top: 2px solid #e5e7eb;
+}
+
+[data-theme="dark"] .flowblocs-content-editor hr,
+[data-theme="dark"] .flowblocs-content-display hr {
+  border-top-color: #374151;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.todo-item input[type="checkbox"] {
+  margin: 0;
+  cursor: default;
+}
+
+/* Editor Help */
+.flowblocs-editor-help {
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border-top: 1px solid #f3f4f6;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+[data-theme="dark"] .flowblocs-editor-help {
+  background: #111827;
+  border-top-color: #374151;
+  color: #6b7280;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .flowblocs-node {
+    min-width: 200px;
+    max-width: 300px;
+  }
+  
+  .flowblocs-node.expanded {
+    min-width: 250px;
+    max-width: 350px;
+  }
+  
+  .flowblocs-content-editor,
+  .flowblocs-content-display {
+    max-height: 250px;
+    font-size: 0.85rem;
+  }
+  
+  .flowblocs-editor-header {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+  
+  .flowblocs-editor-actions {
+    align-self: flex-end;
+  }
+  
+  .flowblocs-node-actions {
+    gap: 0.125rem;
+  }
+  
+  .flowblocs-action-btn {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+
+/* Animation for expanding */
+.flowblocs-node {
+  transition: width 0.3s ease, height 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+}
+
+.flowblocs-content-area {
+  transition: max-height 0.3s ease;
+}
+
+/* Custom scrollbar for content areas */
+.flowblocs-content-editor::-webkit-scrollbar,
+.flowblocs-content-display::-webkit-scrollbar {
+  width: 14px;
+}
+
+.flowblocs-content-editor::-webkit-scrollbar-track,
+.flowblocs-content-display::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, #f1f5f9);
+}
+
+.flowblocs-content-editor::-webkit-scrollbar-thumb,
+.flowblocs-content-display::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, #cbd5e1);
+  border-radius: 3px;
+}
+
+.flowblocs-content-editor::-webkit-scrollbar-thumb:hover,
+.flowblocs-content-display::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, #94a3b8);
+}
+
+/* Icon adjustments for proper alignment */
+.flowblocs-action-btn svg {
+  display: block;
+}
+
+.flowblocs-edit-btn svg {
+  flex-shrink: 0;
+}
