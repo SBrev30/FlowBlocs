@@ -451,15 +451,19 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
                   onInput={handleContentChange}
                   onMouseDown={(e) => {
                     e.stopPropagation();
-                    // Ensure editor gets focus on click
                     const target = e.currentTarget as HTMLDivElement;
+
+                    // Ensure editor gets focus immediately
                     target.focus();
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Ensure editor gets focus on click
-                    const target = e.currentTarget as HTMLDivElement;
-                    target.focus();
+
+                    // Set cursor position at click location
+                    const selection = window.getSelection();
+                    const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+
+                    if (selection && range) {
+                      selection.removeAllRanges();
+                      selection.addRange(range);
+                    }
                   }}
                   onFocus={(e) => {
                     console.log('✏️ Editor received focus');
