@@ -50,9 +50,6 @@ function App() {
   const handleDrop = async (page: NotionPage, position: { x: number; y: number }): Promise<NotionBlock[]> => {
     console.log('Page dropped:', page.title, 'at position:', position);
 
-    // Increment node count when a new node is added
-    setCanvasNodeCount(prev => prev + 1);
-
     try {
       const token = await getAuthToken();
       if (!token) {
@@ -71,8 +68,15 @@ function App() {
   };
 
   const handleClearCanvas = () => {
-    console.log('Clearing canvas');
-    setCanvasNodeCount(0);
+    console.log('Clear canvas triggered from sidebar');
+    // Trigger the canvas to clear via the global function
+    if ((window as any).clearCanvas) {
+      (window as any).clearCanvas();
+    }
+  };
+
+  const handleNodeCountChange = (count: number) => {
+    setCanvasNodeCount(count);
   };
 
   if (isLoading) {
@@ -103,7 +107,8 @@ function App() {
       />
       <Canvas 
         onDrop={handleDrop} 
-        onClearCanvas={handleClearCanvas}
+        onClearCanvas={() => {}} // This is now handled by the global function
+        onNodeCountChange={handleNodeCountChange}
       />
     </div>
   );
