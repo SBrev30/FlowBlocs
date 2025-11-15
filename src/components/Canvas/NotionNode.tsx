@@ -79,7 +79,16 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
     setIsEditing(true);
     setIsExpanded(true);
     setSaveStatus('idle');
-  }, []);
+
+    // Focus the editor after state update
+    setTimeout(() => {
+      const editor = document.getElementById(`editor-${id}`) as HTMLDivElement;
+      if (editor) {
+        editor.focus();
+        console.log('✏️ Editor focused');
+      }
+    }, 100);
+  }, [id]);
 
   const cancelEditing = useCallback(() => {
     setIsEditing(false);
@@ -295,46 +304,50 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
   const saveChanges = useCallback(async () => {
     const editorElement = document.querySelector(`#editor-${id}`) as HTMLDivElement;
     if (!editorElement || !content.hasChanges) return;
-    
+
     setSaveStatus('saving');
-    
+
     try {
       const html = editorElement.innerHTML;
       const updatedBlocks = htmlToBlocks(html);
-      
+
       console.log('💾 Saving changes:', updatedBlocks.length, 'blocks');
-      
+
       // Update each block individually
-      const updatePromises = updatedBlocks.map(async (block) => {
-        if (block.id && !block.id.startsWith('new-')) {
+      const updatePromises = updatedBlocks
+        .filter(block => block.id && !block.id.startsWith('new-'))
+        .map(async (block) => {
           // Update existing block
           const updateData = {
             [block.type]: block[block.type]
           };
-          await updatePageContent(block.id, updateData);
-        }
-      });
-      
-      await Promise.all(updatePromises);
-      
-      setContent(prev => ({ 
-        ...prev, 
+          const result = await updatePageContent(block.id, updateData);
+          console.log(`✅ Block ${block.id} updated:`, result);
+          return result;
+        });
+
+      // Wait for all updates to complete
+      const results = await Promise.all(updatePromises);
+      console.log(`✅ All ${results.length} blocks updated successfully`);
+
+      setContent(prev => ({
+        ...prev,
         hasChanges: false,
         blocks: updatedBlocks
       }));
       setSaveStatus('saved');
-      
+
       // Clear saved status after 2 seconds
       setTimeout(() => {
         setSaveStatus('idle');
       }, 2000);
-      
+
       console.log('✅ Changes saved successfully');
-      
+
     } catch (error) {
       console.error('❌ Failed to save changes:', error);
       setSaveStatus('error');
-      
+
       // Clear error status after 3 seconds
       setTimeout(() => {
         setSaveStatus('idle');
@@ -434,9 +447,23 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
                   className="flowblocs-content-editor"
                   contentEditable
                   suppressContentEditableWarning={true}
+                  tabIndex={0}
                   onInput={handleContentChange}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    // Ensure editor gets focus on click
+                    const target = e.currentTarget as HTMLDivElement;
+                    target.focus();
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Ensure editor gets focus on click
+                    const target = e.currentTarget as HTMLDivElement;
+                    target.focus();
+                  }}
+                  onFocus={(e) => {
+                    console.log('✏️ Editor received focus');
+                  }}
                   onDoubleClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                   dangerouslySetInnerHTML={{

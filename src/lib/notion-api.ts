@@ -530,8 +530,8 @@ export const getPageBlocks = async (pageId: string): Promise<NotionBlock[]> => {
 export const updatePageContent = async (
   blockId: string,
   content: Record<string, any>
-): Promise<void> => {
-  await makeNotionRequest(`/blocks/${blockId}`, 'PATCH', content);
+): Promise<any> => {
+  return await makeNotionRequest(`/blocks/${blockId}`, 'PATCH', content);
 };
 
 export const appendBlocks = async (
