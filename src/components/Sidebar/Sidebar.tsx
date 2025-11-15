@@ -1,31 +1,37 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Database, ChevronRight, ChevronDown, Loader2, RefreshCw, Search, X, Trash2 } from "lucide-react";
 import { GoSidebarCollapse } from "react-icons/go";
 import { getCurrentUser } from "../../lib/notion-api";
 import { getAuthToken } from "../../lib/storage";
-import { useNotionSidebar, NotionDatabase, NotionPage } from "../../lib/notion-sidebar-integration";
+import { useNotionSidebar, NotionPage } from "../../lib/notion-sidebar-integration";
+import { useAuth, useDatabases, useCanvas, useSidebar } from "../../store/appStore";
 import AuthSection from "./AuthSection";
 import PageTreeItem from "./PageTreeItem";
 import "./Sidebar.css";
 
 interface SidebarProps {
-  isCollapsed: boolean;
-  onToggle: () => void;
   onDragStart: (page: NotionPage, databaseId: string) => void;
-  onClearCanvas: () => void;
-  canvasNodeCount: number;
 }
 
-const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNodeCount }: SidebarProps) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [expandedDatabases, setExpandedDatabases] = useState<Set<string>>(new Set());
-  const [databasePages, setDatabasePages] = useState<Record<string, NotionPage[]>>({});
-  const [loadingPages, setLoadingPages] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredDatabases, setFilteredDatabases] = useState<NotionDatabase[]>([]);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
+const Sidebar = ({ onDragStart }: SidebarProps) => {
+  const { isAuthenticated, accessToken, user, setAuth, clearAuth } = useAuth();
+  const { 
+    filteredDatabases, 
+    databasePages, 
+    expandedDatabases, 
+    loadingDatabases, 
+    loadingPages, 
+    searchQuery,
+    setDatabases,
+    setDatabasePages,
+    toggleDatabase,
+    setLoadingDatabases,
+    setLoadingPages,
+    setSearchQuery,
+    refreshDatabases
+  } = useDatabases();
+  const { canvasNodes, clearCanvas } = useCanvas();
+  const { sidebarCollapsed, setSidebarCollapsed } = useSidebar();
 
   const {
     databases,
@@ -40,6 +46,16 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    setLoadingDatabases(loading);
+  }, [loading, setLoadingDatabases]);
+
+  useEffect(() => {
+    if (databases.length > 0) {
+      setDatabases(databases);
+    }
+  }, [databases, setDatabases]);
+
   const checkAuth = async () => {
     console.log("🔍 Checking authentication...");
     try {
@@ -47,130 +63,55 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
       console.log("🔑 Token exists:", !!token);
 
       if (token) {
-        setAccessToken(token);
-        setIsAuthenticated(true);
-        await loadUserData();
+        const userData = await getCurrentUser();
+        setAuth(token, userData);
+        console.log("✅ Auth set:", userData);
       } else {
-        console.log("❌ No token found");
-        setIsAuthenticated(false);
-        setAccessToken(null);
-        setUser(null);
-        // Clear all state when not authenticated
-        setFilteredDatabases([]);
-        setDatabasePages({});
-        setExpandedDatabases(new Set());
-        setSearchQuery('');
-        setLoadingPages(new Set());
+        clearAuth();
+        console.log("❌ No token found, cleared auth");
       }
     } catch (error) {
       console.error("❌ Auth check failed:", error);
-      setIsAuthenticated(false);
-      setAccessToken(null);
-      // Clear all state on auth failure
-      setFilteredDatabases([]);
-      setDatabasePages({});
-      setExpandedDatabases(new Set());
-      setSearchQuery('');
-      setLoadingPages(new Set());
+      clearAuth();
     }
   };
-
-  const loadUserData = async () => {
-    console.log("👤 Loading user data...");
-    try {
-      const userData = await getCurrentUser();
-      console.log("✅ User loaded:", userData);
-      setUser(userData);
-    } catch (error) {
-      console.error("❌ Failed to load user data:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (accessToken) {
-      loadDatabases();
-    } else {
-      // When accessToken becomes null, clear filtered databases immediately
-      setFilteredDatabases([]);
-    }
-  }, [accessToken, loadDatabases]);
-
-  useEffect(() => {
-    setFilteredDatabases(databases);
-    if (databases.length === 0) {
-      setDatabasePages({});
-      setExpandedDatabases(new Set());
-      setSearchQuery('');
-    }
-  }, [databases]);
 
   const handleRefresh = () => {
-    // Clear existing state before refreshing
-    setDatabasePages({});
-    setExpandedDatabases(new Set());
-    setSearchQuery('');
+    refreshDatabases();
     loadDatabases(true);
   };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (query.trim()) {
-      const results = await searchDatabasesService(query);
-      setFilteredDatabases(results);
-    } else {
-      setFilteredDatabases(databases);
+    if (query.trim() && databases.length > 0) {
+      await searchDatabasesService(query);
     }
   };
 
-  const handleClearCanvas = () => {
-    if (canvasNodeCount === 0) return;
-    setShowClearConfirm(true);
-  };
-
-  const confirmClearCanvas = () => {
-    onClearCanvas();
-    setShowClearConfirm(false);
-  };
-
-  const toggleDatabase = async (databaseId: string) => {
-    console.log("🔄 Toggling database:", databaseId);
-    const newExpanded = new Set(expandedDatabases);
-
-    if (newExpanded.has(databaseId)) {
-      newExpanded.delete(databaseId);
-      setExpandedDatabases(newExpanded);
-    } else {
-      newExpanded.add(databaseId);
-      setExpandedDatabases(newExpanded);
-
-      if (!databasePages[databaseId]) {
-        console.log("📄 Loading pages for database:", databaseId);
-        setLoadingPages(new Set(loadingPages).add(databaseId));
-        try {
-          const pages = await loadDatabasePages(databaseId);
-          console.log("✅ Pages loaded:", pages.length, pages);
-
-          setDatabasePages(prev => ({
-            ...prev,
-            [databaseId]: pages
-          }));
-        } catch (error) {
-          console.error("❌ Failed to load database pages:", error);
-        } finally {
-          const newLoadingPages = new Set(loadingPages);
-          newLoadingPages.delete(databaseId);
-          setLoadingPages(newLoadingPages);
-        }
+  const handleToggleDatabase = async (databaseId: string) => {
+    toggleDatabase(databaseId);
+    
+    if (!expandedDatabases.has(databaseId) && !databasePages[databaseId]) {
+      console.log("📄 Loading pages for database:", databaseId);
+      setLoadingPages(databaseId, true);
+      try {
+        const pages = await loadDatabasePages(databaseId);
+        setDatabasePages(databaseId, pages);
+        console.log("✅ Pages loaded:", pages.length);
+      } catch (error) {
+        console.error("❌ Failed to load database pages:", error);
+      } finally {
+        setLoadingPages(databaseId, false);
       }
     }
   };
 
-  if (isCollapsed) {
+  if (sidebarCollapsed) {
     return (
       <div className="sidebar collapsed">
         <button
           className="collapse-btn"
-          onClick={onToggle}
+          onClick={() => setSidebarCollapsed(false)}
           title="Expand sidebar"
         >
           <GoSidebarCollapse size={20} style={{ transform: 'rotate(180deg)' }} />
@@ -185,7 +126,7 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
         <h2>FlowBlocs</h2>
         <button
           className="collapse-btn"
-          onClick={onToggle}
+          onClick={() => setSidebarCollapsed(true)}
           title="Collapse sidebar"
         >
           <GoSidebarCollapse size={20} />
@@ -223,7 +164,7 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
             />
             {searchQuery && (
               <button
-                onClick={() => handleSearch('')}
+                onClick={() => setSearchQuery('')}
                 className="clear-button"
                 title="Clear search"
               >
@@ -234,38 +175,17 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
 
           <div className="canvas-controls">
             <button
-              className={`clear-canvas-btn ${canvasNodeCount === 0 ? 'disabled' : ''}`}
-              onClick={handleClearCanvas}
-              disabled={canvasNodeCount === 0}
-              title={canvasNodeCount === 0 ? 'No nodes to clear' : `Clear all ${canvasNodeCount} nodes from canvas`}
+              className={`clear-canvas-btn ${canvasNodes.length === 0 ? 'disabled' : ''}`}
+              onClick={clearCanvas}
+              disabled={canvasNodes.length === 0}
+              title={canvasNodes.length === 0 ? 'No nodes to clear' : `Clear all ${canvasNodes.length} nodes from canvas`}
             >
               <Trash2 size={14} />
-              Clear Canvas ({canvasNodeCount})
+              Clear Canvas ({canvasNodes.length})
             </button>
           </div>
 
-          {showClearConfirm && (
-            <div className="clear-confirm-popup">
-              <p>Remove all {canvasNodeCount} nodes from canvas?</p>
-              <small>This will only clear the canvas, not delete from Notion.</small>
-              <div className="confirm-actions">
-                <button 
-                  className="cancel-btn"
-                  onClick={() => setShowClearConfirm(false)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="clear-btn"
-                  onClick={confirmClearCanvas}
-                >
-                  Clear All
-                </button>
-              </div>
-            </div>
-          )}
-
-          {loading ? (
+          {loadingDatabases ? (
             <div className="loading-state">
               <Loader2 className="spinner" size={20} />
               <span>Loading databases...</span>
@@ -283,15 +203,7 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
                   : 'Share a database with this integration in Notion'}
               </small>
               {!searchQuery && (
-                <button
-                  onClick={handleRefresh}
-                  style={{
-                    marginTop: '8px',
-                    padding: '4px 8px',
-                    fontSize: '12px',
-                    cursor: 'pointer'
-                  }}
-                >
+                <button onClick={handleRefresh} style={{ marginTop: '8px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}>
                   Refresh
                 </button>
               )}
@@ -302,7 +214,7 @@ const Sidebar = ({ isCollapsed, onToggle, onDragStart, onClearCanvas, canvasNode
                 <div key={db.id} className="database-item">
                   <button
                     className="database-header"
-                    onClick={() => toggleDatabase(db.id)}
+                    onClick={() => handleToggleDatabase(db.id)}
                   >
                     {expandedDatabases.has(db.id) ? (
                       <ChevronDown size={16} />
