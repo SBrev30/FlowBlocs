@@ -1,0 +1,430 @@
+/* NotionNode.css */
+
+.notion-node {
+  min-width: 250px;
+  max-width: 400px;
+  background: var(--node-bg, #ffffff);
+  border: 2px solid var(--node-border, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.notion-node.selected {
+  border-color: var(--node-selected-border, #3b82f6);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.notion-node.expanded {
+  min-width: 350px;
+  max-width: 500px;
+  min-height: 300px;
+}
+
+.notion-node.editing {
+  border-color: var(--node-editing-border, #10b981);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+}
+
+/* Node Header */
+.node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: var(--node-header-bg, #f9fafb);
+  border-bottom: 1px solid var(--node-border, #e5e7eb);
+}
+
+.node-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.node-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.title-text {
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  padding: 0.25rem;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  transition: all 0.15s ease;
+}
+
+.action-btn:hover {
+  background: var(--btn-hover-bg, #e5e7eb);
+  color: var(--text-primary, #1f2937);
+}
+
+.action-btn.active {
+  background: var(--btn-active-bg, #3b82f6);
+  color: white;
+}
+
+.edit-btn.active {
+  background: var(--edit-active-bg, #10b981);
+}
+
+/* Node Summary */
+.node-summary {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+}
+
+/* Node Content (Expanded) */
+.node-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 600px;
+  overflow: hidden;
+}
+
+.node-properties {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+  background: var(--properties-bg, #f8f9fa);
+}
+
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Loading State */
+.loading {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary, #6b7280);
+  font-style: italic;
+}
+
+/* Editor Header */
+.editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--editor-header-bg, #ecfdf5);
+  border-bottom: 1px solid var(--editor-border, #10b981);
+  font-size: 0.875rem;
+}
+
+.editor-title {
+  font-weight: 600;
+  color: var(--editor-title-color, #059669);
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.save-btn {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--save-btn-border, #10b981);
+  background: var(--save-btn-bg, #10b981);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: var(--save-btn-hover, #059669);
+}
+
+.save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Save Status */
+.save-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.save-status.saving {
+  background: var(--status-saving-bg, #dbeafe);
+  color: var(--status-saving-text, #2563eb);
+}
+
+.save-status.saved {
+  background: var(--status-saved-bg, #dcfce7);
+  color: var(--status-saved-text, #16a34a);
+}
+
+.save-status.error {
+  background: var(--status-error-bg, #fee2e2);
+  color: var(--status-error-text, #dc2626);
+}
+
+.save-status.unsaved {
+  background: var(--status-unsaved-bg, #fef3c7);
+  color: var(--status-unsaved-text, #d97706);
+}
+
+/* Content Editor */
+.content-editor {
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-primary, #1f2937);
+  background: var(--editor-bg, #ffffff);
+  resize: none;
+  min-height: 200px;
+  max-height: 400px;
+}
+
+.content-editor:focus {
+  outline: 2px solid var(--editor-focus, #10b981);
+  outline-offset: -2px;
+}
+
+/* Content Display (Read-only) */
+.content-display {
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-primary, #1f2937);
+  max-height: 400px;
+}
+
+/* Content Styling */
+.content-editor h1,
+.content-display h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+  color: var(--heading-color, #1f2937);
+}
+
+.content-editor h2,
+.content-display h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  color: var(--heading-color, #1f2937);
+}
+
+.content-editor h3,
+.content-display h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  color: var(--heading-color, #1f2937);
+}
+
+.content-editor p,
+.content-display p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.content-editor ul,
+.content-display ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.content-editor ol,
+.content-display ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.content-editor li,
+.content-display li {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+
+.content-editor blockquote,
+.content-display blockquote {
+  margin: 0.75rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid var(--quote-border, #e5e7eb);
+  background: var(--quote-bg, #f9fafb);
+  font-style: italic;
+}
+
+.content-editor pre,
+.content-display pre {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: var(--code-bg, #f3f4f6);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+}
+
+.content-editor code,
+.content-display code {
+  background: var(--inline-code-bg, #f3f4f6);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+}
+
+.content-editor hr,
+.content-display hr {
+  margin: 1rem 0;
+  border: none;
+  border-top: 2px solid var(--divider-color, #e5e7eb);
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.todo-item input[type="checkbox"] {
+  margin: 0;
+  cursor: default;
+}
+
+/* Editor Help */
+.editor-help {
+  padding: 0.5rem 1rem;
+  background: var(--help-bg, #f8f9fa);
+  border-top: 1px solid var(--border-light, #f3f4f6);
+  color: var(--text-tertiary, #9ca3af);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .notion-node {
+    min-width: 200px;
+    max-width: 300px;
+  }
+  
+  .notion-node.expanded {
+    min-width: 250px;
+    max-width: 350px;
+  }
+  
+  .content-editor,
+  .content-display {
+    max-height: 250px;
+    font-size: 0.85rem;
+  }
+  
+  .editor-header {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+  
+  .editor-actions {
+    align-self: flex-end;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .notion-node {
+    background: var(--node-bg-dark, #1f2937);
+    border-color: var(--node-border-dark, #374151);
+    color: var(--text-primary-dark, #f9fafb);
+  }
+  
+  .node-header {
+    background: var(--node-header-bg-dark, #111827);
+    border-color: var(--node-border-dark, #374151);
+  }
+  
+  .title-text {
+    color: var(--text-primary-dark, #f9fafb);
+  }
+  
+  .content-editor {
+    background: var(--editor-bg-dark, #1f2937);
+    color: var(--text-primary-dark, #f9fafb);
+  }
+  
+  .action-btn {
+    color: var(--text-secondary-dark, #9ca3af);
+  }
+  
+  .action-btn:hover {
+    background: var(--btn-hover-bg-dark, #374151);
+    color: var(--text-primary-dark, #f9fafb);
+  }
+}
+
+/* Animation for expanding */
+.notion-node {
+  transition: width 0.3s ease, height 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+}
+
+.content-area {
+  transition: max-height 0.3s ease;
+}
+
+/* Custom scrollbar for content areas */
+.content-editor::-webkit-scrollbar,
+.content-display::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content-editor::-webkit-scrollbar-track,
+.content-display::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, #f1f5f9);
+}
+
+.content-editor::-webkit-scrollbar-thumb,
+.content-display::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, #cbd5e1);
+  border-radius: 3px;
+}
+
+.content-editor::-webkit-scrollbar-thumb:hover,
+.content-display::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, #94a3b8);
+}
