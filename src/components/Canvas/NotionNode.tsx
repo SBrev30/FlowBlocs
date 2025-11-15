@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { NotionPage, getPageBlocks, updatePageContent } from '../../lib/notion-api';
 import { PropertySummary } from '../PropertyDisplay';
+import { ExpandButton, OpenInNotionButton, DeleteButton, EditButton } from './NodeActions';
 import './NotionNode.css';
 
 interface NotionNodeData {
@@ -352,44 +353,19 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
         </div>
         
         <div className="flowblocs-node-actions">
-          {/* Expand/Collapse Button */}
-          <button
-            className={`flowblocs-action-btn expand-btn ${isExpanded ? 'active' : ''}`}
+          <ExpandButton
+            isExpanded={isExpanded}
             onClick={toggleExpanded}
             title={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              {isExpanded ? (
-                // Collapse icon (diagonal arrows inward)
-                <path d="m3.8 14.7 2.1-2.1 1.4 1.4-2.1 2.1c-.4.4-1 .4-1.4 0s-.4-1 0-1.4zm14.4-5.4-2.1 2.1-1.4-1.4 2.1-2.1c.4-.4 1-.4 1.4 0s.4 1 0 1.4zM15 3h3a3 3 0 0 1 3 3v3l-1.5-1.5-1.4 1.4L20 7V6a1 1 0 0 0-1-1h-1l-1.9 1.9-1.4-1.4L15 3zM9 21H6a3 3 0 0 1-3-3v-3l1.5 1.5 1.4-1.4L4 17v1a1 1 0 0 0 1 1h1l1.9-1.9 1.4 1.4L9 21z"/>
-              ) : (
-                // Expand icon (diagonal arrows outward)  
-                <path d="M9 9V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6h6a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H15v6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-6H3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h6z"/>
-              )}
-            </svg>
-          </button>
-          
-          {/* Open in Notion Button */}
-          <button
-            className="flowblocs-action-btn notion-btn"
+          />
+          <OpenInNotionButton
             onClick={openInNotion}
             title="Open in Notion"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M7 7h8.586L5.293 17.293a1 1 0 1 0 1.414 1.414L17 8.414V17a1 1 0 1 0 2 0V6a1 1 0 0 0-1-1H8a1 1 0 1 0 0 2z"/>
-            </svg>
-          </button>
-          
-          {/* Delete Button */}
-          <button
-            className="flowblocs-action-btn delete-btn"
+          />
+          <DeleteButton
             onClick={handleDeleteNode}
             title="Delete node"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
-            </svg>
-          </button>
+          />
         </div>
       </div>
 
@@ -444,8 +420,12 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
                   contentEditable
                   suppressContentEditableWarning={true}
                   onInput={handleContentChange}
-                  dangerouslySetInnerHTML={{ 
-                    __html: blocksToHtml(content.blocks) 
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  dangerouslySetInnerHTML={{
+                    __html: blocksToHtml(content.blocks)
                   }}
                 />
                 
@@ -460,16 +440,10 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
               <>
                 {/* Read-only Content with Edit Button */}
                 <div className="flowblocs-content-header">
-                  <button
-                    className="flowblocs-edit-btn"
+                  <EditButton
                     onClick={startEditing}
                     title="Edit content"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M3 21v-4.25L16.2 3.575q.3-.275.663-.425.362-.15.762-.15t.775.15q.375.15.65.45L20.425 5q.3.275.438.65T21 6.4q0 .4-.137.763-.138.362-.438.662L7.25 21H3ZM17.6 7.8L19 6.4 17.6 5l-1.4 1.4 1.4 1.4Z"/>
-                    </svg>
-                    Edit
-                  </button>
+                  />
                 </div>
                 
                 <div 

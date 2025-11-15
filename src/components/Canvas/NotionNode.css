@@ -271,6 +271,8 @@
   resize: none;
   min-height: 200px;
   max-height: 400px;
+  cursor: text;
+  user-select: text;
 }
 
 .flowblocs-content-editor:focus {
