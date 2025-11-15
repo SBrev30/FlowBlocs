@@ -525,7 +525,7 @@
 /* Custom scrollbar for content areas */
 .flowblocs-content-editor::-webkit-scrollbar,
 .flowblocs-content-display::-webkit-scrollbar {
-  width: 10px;
+  width: 14px;
 }
 
 .flowblocs-content-editor::-webkit-scrollbar-track,
