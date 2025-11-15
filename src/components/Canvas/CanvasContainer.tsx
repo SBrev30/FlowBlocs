@@ -24,14 +24,16 @@ const nodeTypes = {
 interface CanvasContainerProps {
   onDrop: (page: NotionPage, position: { x: number; y: number }) => Promise<NotionBlock[]>;
   onClearCanvas: () => void;
+  onNodeCountChange: (count: number) => void;
 }
 
-const CanvasContainer = ({ onDrop, onClearCanvas }: CanvasContainerProps) => {
+const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasContainerProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [clearTrigger, setClearTrigger] = useState(0);
 
   useEffect(() => {
     loadCanvasState();
@@ -53,6 +55,19 @@ const CanvasContainer = ({ onDrop, onClearCanvas }: CanvasContainerProps) => {
       if (timeout) clearTimeout(timeout);
     };
   }, [nodes, edges]);
+
+  // Update parent with current node count whenever nodes change
+  useEffect(() => {
+    onNodeCountChange(nodes.length);
+  }, [nodes.length, onNodeCountChange]);
+
+  // Listen for clear canvas trigger from parent
+  useEffect(() => {
+    if (clearTrigger > 0) {
+      setNodes([]);
+      setEdges([]);
+    }
+  }, [clearTrigger, setNodes, setEdges]);
 
   const loadCanvasState = async () => {
     const state = await getCanvasState();
@@ -90,10 +105,17 @@ const CanvasContainer = ({ onDrop, onClearCanvas }: CanvasContainerProps) => {
   };
 
   const clearCanvas = useCallback(() => {
-    setNodes([]);
-    setEdges([]);
+    setClearTrigger(prev => prev + 1);
     onClearCanvas();
-  }, [setNodes, setEdges, onClearCanvas]);
+  }, [onClearCanvas]);
+
+  // Expose clearCanvas function to parent via ref pattern
+  useEffect(() => {
+    (window as any).clearCanvas = clearCanvas;
+    return () => {
+      delete (window as any).clearCanvas;
+    };
+  }, [clearCanvas]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
