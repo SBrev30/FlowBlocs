@@ -161,9 +161,8 @@ const formatProperty = (propertyName: string, property: any): FormattedProperty 
         base.value = values;
         base.displayValue = values.length > 0 ? values.join(', ') : '(No tags)';
         
-        // Store colors for individual tags
         const colors = property.multi_select.map((item: any) => item.color);
-        base.color = colors.length > 0 ? colors[0] : undefined; // Use first color for simplicity
+        base.color = colors.length > 0 ? colors[0] : undefined;
       } else {
         base.displayValue = '(No tags)';
       }
@@ -237,7 +236,6 @@ const formatProperty = (propertyName: string, property: any): FormattedProperty 
 
     case 'formula':
       if (property.formula) {
-        // Formula results can be various types
         if (property.formula.type === 'string') {
           base.value = property.formula.string || '';
           base.displayValue = property.formula.string || '(Empty)';
@@ -266,7 +264,6 @@ const formatProperty = (propertyName: string, property: any): FormattedProperty 
 
     case 'rollup':
       if (property.rollup) {
-        // Rollup results can be various types
         if (property.rollup.type === 'array') {
           const arrayLength = property.rollup.array?.length || 0;
           base.displayValue = `${arrayLength} item(s)`;
@@ -326,7 +323,6 @@ export const formatPageProperties = (properties: Record<string, any>): Formatted
     }
   });
 
-  // Sort properties: title first, then alphabetically
   formatted.sort((a, b) => {
     if (a.type === 'title') return -1;
     if (b.type === 'title') return 1;
@@ -357,14 +353,12 @@ export const getPageSummary = (page: NotionPage): {
   };
 
   formatted.forEach(prop => {
-    // Extract common property types
     if (prop.type === 'multi_select') {
       if (Array.isArray(prop.value)) {
         summary.tags.push(...prop.value);
       }
     }
     
-    // Check for common property names
     const lowerName = prop.name.toLowerCase();
     if (lowerName.includes('status') && prop.type === 'select') {
       (summary as any).status = prop.displayValue;
@@ -376,7 +370,6 @@ export const getPageSummary = (page: NotionPage): {
       (summary as any).dueDate = prop.displayValue;
     }
 
-    // Include non-empty, non-title properties as key properties
     if (prop.type !== 'title' && prop.displayValue && !prop.displayValue.includes('(') && !prop.displayValue.includes('No ')) {
       summary.keyProperties.push(prop);
     }
@@ -384,8 +377,6 @@ export const getPageSummary = (page: NotionPage): {
 
   return summary;
 };
-
-// ... rest of the existing functions remain the same ...
 
 /**
  * Make a request through Supabase proxy to avoid CORS issues
@@ -492,7 +483,6 @@ export const queryDatabase = async (
     const title = extractPageTitle(page.properties, 'Untitled Page');
     console.log(`📄 Processing page: ${title} (${page.id})`);
     
-    // Format properties for display
     const formattedProperties = formatPageProperties(page.properties);
     
     if (!title || title === 'Untitled Page') {
@@ -509,7 +499,7 @@ export const queryDatabase = async (
       cover: page.cover,
       properties: page.properties,
       url: page.url,
-      formattedProperties, // Add formatted properties
+      formattedProperties,
     };
 
     return processedPage;
@@ -523,8 +513,6 @@ export const queryDatabase = async (
     nextCursor: response.next_cursor,
   };
 };
-
-// ... rest of the existing functions remain the same ...
 
 export const getPageBlocks = async (pageId: string): Promise<NotionBlock[]> => {
   console.log(`📖 Fetching blocks for page: ${pageId}`);
@@ -551,6 +539,330 @@ export const appendBlocks = async (
   children: any[]
 ): Promise<void> => {
   await makeNotionRequest(`/blocks/${blockId}/children`, 'PATCH', { children });
+};
+
+/**
+ * Update a single block's content
+ */
+export const updateBlockContent = async (
+  blockId: string, 
+  blockType: string, 
+  content: string
+): Promise<void> => {
+  console.log(`📝 Updating block ${blockId} (${blockType})`);
+  
+  const richText = content ? [{ type: 'text', text: { content } }] : [];
+  
+  let updateData: any = {};
+  
+  switch (blockType) {
+    case 'paragraph':
+      updateData = { paragraph: { rich_text: richText } };
+      break;
+    case 'heading_1':
+      updateData = { heading_1: { rich_text: richText } };
+      break;
+    case 'heading_2':
+      updateData = { heading_2: { rich_text: richText } };
+      break;
+    case 'heading_3':
+      updateData = { heading_3: { rich_text: richText } };
+      break;
+    case 'bulleted_list_item':
+      updateData = { bulleted_list_item: { rich_text: richText } };
+      break;
+    case 'numbered_list_item':
+      updateData = { numbered_list_item: { rich_text: richText } };
+      break;
+    case 'to_do':
+      updateData = { to_do: { rich_text: richText, checked: false } };
+      break;
+    case 'quote':
+      updateData = { quote: { rich_text: richText } };
+      break;
+    case 'code':
+      updateData = { code: { rich_text: richText, language: 'plain text' } };
+      break;
+    default:
+      throw new Error(`Unsupported block type for update: ${blockType}`);
+  }
+  
+  await makeNotionRequest(`/blocks/${blockId}`, 'PATCH', updateData);
+  console.log(`✅ Block ${blockId} updated successfully`);
+};
+
+/**
+ * Update multiple blocks in batch
+ */
+export const updateMultipleBlocks = async (updates: Array<{
+  blockId: string;
+  blockType: string;
+  content: string;
+}>): Promise<void> => {
+  console.log(`📝 Batch updating ${updates.length} blocks`);
+  
+  const updatePromises = updates.map(({ blockId, blockType, content }) => 
+    updateBlockContent(blockId, blockType, content)
+  );
+  
+  try {
+    await Promise.all(updatePromises);
+    console.log(`✅ Successfully updated ${updates.length} blocks`);
+  } catch (error) {
+    console.error('❌ Failed to update some blocks:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add new blocks to a page
+ */
+export const addNewBlocks = async (
+  pageId: string, 
+  newBlocks: Array<{
+    type: string;
+    content: string;
+    language?: string;
+  }>
+): Promise<void> => {
+  console.log(`➕ Adding ${newBlocks.length} new blocks to page ${pageId}`);
+  
+  const children = newBlocks.map(block => {
+    const richText = block.content ? [{ type: 'text', text: { content: block.content } }] : [];
+    
+    switch (block.type) {
+      case 'paragraph':
+        return {
+          type: 'paragraph',
+          paragraph: { rich_text: richText }
+        };
+      case 'heading_1':
+        return {
+          type: 'heading_1',
+          heading_1: { rich_text: richText }
+        };
+      case 'heading_2':
+        return {
+          type: 'heading_2',
+          heading_2: { rich_text: richText }
+        };
+      case 'heading_3':
+        return {
+          type: 'heading_3',
+          heading_3: { rich_text: richText }
+        };
+      case 'bulleted_list_item':
+        return {
+          type: 'bulleted_list_item',
+          bulleted_list_item: { rich_text: richText }
+        };
+      case 'numbered_list_item':
+        return {
+          type: 'numbered_list_item',
+          numbered_list_item: { rich_text: richText }
+        };
+      case 'to_do':
+        return {
+          type: 'to_do',
+          to_do: { rich_text: richText, checked: false }
+        };
+      case 'quote':
+        return {
+          type: 'quote',
+          quote: { rich_text: richText }
+        };
+      case 'code':
+        return {
+          type: 'code',
+          code: { 
+            rich_text: richText, 
+            language: block.language || 'plain text'
+          }
+        };
+      case 'divider':
+        return {
+          type: 'divider',
+          divider: {}
+        };
+      default:
+        return {
+          type: 'paragraph',
+          paragraph: { rich_text: richText }
+        };
+    }
+  });
+  
+  await appendBlocks(pageId, children);
+  console.log(`✅ Successfully added ${newBlocks.length} blocks`);
+};
+
+/**
+ * Delete a block
+ */
+export const deleteBlock = async (blockId: string): Promise<void> => {
+  console.log(`🗑️ Deleting block ${blockId}`);
+  
+  await makeNotionRequest(`/blocks/${blockId}`, 'DELETE');
+  console.log(`✅ Block ${blockId} deleted successfully`);
+};
+
+/**
+ * Extract text content from a block object
+ */
+const extractTextFromBlock = (block: any): string => {
+  if (!block[block.type]) return '';
+  
+  const blockData = block[block.type];
+  
+  if (blockData.rich_text && Array.isArray(blockData.rich_text)) {
+    return blockData.rich_text.map((item: any) => item.text?.content || '').join('');
+  }
+  
+  return '';
+};
+
+/**
+ * Smart content update - handles both existing and new blocks
+ */
+export const updatePageContentSmart = async (
+  pageId: string,
+  updatedBlocks: any[]
+): Promise<void> => {
+  console.log(`🔄 Smart updating page ${pageId} with ${updatedBlocks.length} blocks`);
+  
+  const currentBlocks = await getPageBlocks(pageId);
+  const currentBlockIds = new Set(currentBlocks.map(block => block.id));
+  
+  const existingBlocks = updatedBlocks.filter(block => 
+    block.id && !block.id.startsWith('new-') && currentBlockIds.has(block.id)
+  );
+  
+  const newBlocks = updatedBlocks.filter(block => 
+    !block.id || block.id.startsWith('new-') || !currentBlockIds.has(block.id)
+  );
+  
+  console.log(`📊 Updating ${existingBlocks.length} existing blocks, adding ${newBlocks.length} new blocks`);
+  
+  if (existingBlocks.length > 0) {
+    const updates = existingBlocks.map(block => ({
+      blockId: block.id,
+      blockType: block.type,
+      content: extractTextFromBlock(block)
+    }));
+    
+    await updateMultipleBlocks(updates);
+  }
+  
+  if (newBlocks.length > 0) {
+    const blocksToAdd = newBlocks.map(block => ({
+      type: block.type,
+      content: extractTextFromBlock(block),
+      language: block.type === 'code' ? (block.code?.language || 'plain text') : undefined
+    }));
+    
+    await addNewBlocks(pageId, blocksToAdd);
+  }
+  
+  console.log(`✅ Smart update completed for page ${pageId}`);
+};
+
+/**
+ * Validate block structure before updating
+ */
+export const validateBlocks = (blocks: any[]): { valid: any[]; invalid: any[] } => {
+  const valid = [];
+  const invalid = [];
+  
+  for (const block of blocks) {
+    if (!block.type) {
+      invalid.push({ block, reason: 'Missing type' });
+      continue;
+    }
+    
+    const supportedTypes = [
+      'paragraph', 'heading_1', 'heading_2', 'heading_3',
+      'bulleted_list_item', 'numbered_list_item', 'to_do',
+      'quote', 'code', 'divider'
+    ];
+    
+    if (!supportedTypes.includes(block.type)) {
+      invalid.push({ block, reason: `Unsupported type: ${block.type}` });
+      continue;
+    }
+    
+    valid.push(block);
+  }
+  
+  if (invalid.length > 0) {
+    console.warn(`⚠️ Found ${invalid.length} invalid blocks:`, invalid);
+  }
+  
+  return { valid, invalid };
+};
+
+/**
+ * Enhanced error handling for content updates
+ */
+export const safeUpdatePageContent = async (
+  pageId: string,
+  updatedBlocks: any[]
+): Promise<{ success: boolean; errors: any[] }> => {
+  const errors: any[] = [];
+  
+  try {
+    const { valid, invalid } = validateBlocks(updatedBlocks);
+    
+    if (invalid.length > 0) {
+      errors.push(...invalid.map(item => ({
+        type: 'validation',
+        message: item.reason,
+        block: item.block
+      })));
+    }
+    
+    if (valid.length === 0) {
+      return { success: false, errors };
+    }
+    
+    await updatePageContentSmart(pageId, valid);
+    
+    return { 
+      success: true, 
+      errors: errors.length > 0 ? errors : [] 
+    };
+    
+  } catch (error) {
+    console.error('❌ Failed to update page content:', error);
+    
+    errors.push({
+      type: 'api',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      error
+    });
+    
+    return { success: false, errors };
+  }
+};
+
+/**
+ * Get page content with better error handling
+ */
+export const safeGetPageContent = async (pageId: string): Promise<{
+  blocks: any[];
+  success: boolean;
+  error?: string;
+}> => {
+  try {
+    const blocks = await getPageBlocks(pageId);
+    return { blocks, success: true };
+  } catch (error) {
+    console.error('❌ Failed to get page content:', error);
+    return {
+      blocks: [],
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
 };
 
 export const getPageChildren = async (pageId: string): Promise<NotionPage[]> => {
