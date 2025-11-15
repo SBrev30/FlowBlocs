@@ -188,6 +188,15 @@
   color: var(--text-primary);
 }
 
+.node-action-button.delete-button {
+  color: var(--text-secondary);
+}
+
+.node-action-button.delete-button:hover {
+  background-color: var(--accent-danger-bg);
+  color: var(--accent-danger);
+}
+
 .node-content {
   padding: var(--spacing-md);
   max-height: 400px;
