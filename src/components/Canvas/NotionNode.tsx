@@ -3,6 +3,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { NotionPage, getPageBlocks, updatePageContent } from '../../lib/notion-api';
 import { PropertySummary } from '../PropertyDisplay';
 import { ExpandButton, OpenInNotionButton, DeleteButton, EditButton } from './NodeActions';
+import DeleteNodePopup from './DeleteNodePopup';
 import './NotionNode.css';
 
 interface NotionNodeData {
@@ -17,10 +18,10 @@ interface EditableContent {
   hasChanges: boolean;
 }
 
-const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({ 
-  data, 
+const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
+  data,
   selected,
-  id 
+  id
 }) => {
   const [isExpanded, setIsExpanded] = useState(data.isExpanded || false);
   const [isEditing, setIsEditing] = useState(false);
@@ -30,6 +31,8 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
     hasChanges: false
   });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [deletePopupPosition, setDeletePopupPosition] = useState({ x: 0, y: 0 });
 
   const { page } = data;
 
@@ -86,15 +89,27 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
   }, [loadContent]);
 
   // Handle delete node
-  const handleDeleteNode = useCallback(() => {
-    if (window.confirm(`Are you sure you want to delete "${page.title}"?`)) {
-      // Dispatch custom event to parent to handle node deletion
-      const deleteEvent = new CustomEvent('deleteNode', { 
-        detail: { nodeId: id } 
-      });
-      window.dispatchEvent(deleteEvent);
-    }
-  }, [id, page.title]);
+  const handleDeleteNode = useCallback((event: React.MouseEvent) => {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    setDeletePopupPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.bottom + 8
+    });
+    setShowDeletePopup(true);
+  }, []);
+
+  const confirmDelete = useCallback(() => {
+    // Dispatch custom event to parent to handle node deletion
+    const deleteEvent = new CustomEvent('deleteNode', {
+      detail: { nodeId: id }
+    });
+    window.dispatchEvent(deleteEvent);
+    setShowDeletePopup(false);
+  }, [id]);
+
+  const cancelDelete = useCallback(() => {
+    setShowDeletePopup(false);
+  }, []);
 
   // Handle open in Notion
   const openInNotion = useCallback(() => {
@@ -363,7 +378,7 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
             title="Open in Notion"
           />
           <DeleteButton
-            onClick={handleDeleteNode}
+            onClick={handleDeleteNode as any}
             title="Delete node"
           />
         </div>
@@ -468,6 +483,15 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
         type="source"
         position={Position.Right}
         style={{ background: '#555' }}
+      />
+
+      {/* Delete Popup */}
+      <DeleteNodePopup
+        isOpen={showDeletePopup}
+        nodeTitle={page.title}
+        position={deletePopupPosition}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
       />
     </div>
   );

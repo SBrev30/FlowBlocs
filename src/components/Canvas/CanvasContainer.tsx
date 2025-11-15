@@ -33,7 +33,6 @@ const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasCon
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [clearTrigger, setClearTrigger] = useState(0);
 
   useEffect(() => {
     loadCanvasState();
@@ -61,13 +60,20 @@ const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasCon
     onNodeCountChange(nodes.length);
   }, [nodes.length, onNodeCountChange]);
 
-  // Listen for clear canvas trigger from parent
+  // Listen for deleteNode custom event
   useEffect(() => {
-    if (clearTrigger > 0) {
-      setNodes([]);
-      setEdges([]);
-    }
-  }, [clearTrigger, setNodes, setEdges]);
+    const handleDeleteNode = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { nodeId } = customEvent.detail;
+      console.log('🗑️ Deleting node:', nodeId);
+      setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    };
+
+    window.addEventListener('deleteNode', handleDeleteNode);
+    return () => {
+      window.removeEventListener('deleteNode', handleDeleteNode);
+    };
+  }, [setNodes]);
 
   const loadCanvasState = async () => {
     const state = await getCanvasState();
@@ -105,9 +111,11 @@ const CanvasContainer = ({ onDrop, onClearCanvas, onNodeCountChange }: CanvasCon
   };
 
   const clearCanvas = useCallback(() => {
-    setClearTrigger(prev => prev + 1);
+    console.log('🧹 Clearing canvas - removing all nodes');
+    setNodes([]);
+    setEdges([]);
     onClearCanvas();
-  }, [onClearCanvas]);
+  }, [onClearCanvas, setNodes, setEdges]);
 
   // Expose clearCanvas function to parent via ref pattern
   useEffect(() => {
