@@ -21,8 +21,9 @@
 
 .flowblocs-node.expanded {
   min-width: 350px;
-  max-width: 500px;
+  max-width: 600px;
   min-height: 300px;
+  max-height: 1000px;
 }
 
 .flowblocs-node.editing {
