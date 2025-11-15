@@ -24,7 +24,7 @@
   margin-bottom: 1rem;
 }
 
-.page-title {
+.property-page-title {
   margin: 0 0 0.5rem 0;
   font-size: 1.2rem;
   font-weight: 600;
@@ -367,7 +367,7 @@
     border-color: var(--border-color-dark, #4a5568);
   }
   
-  .page-title {
+  .property-page-title {
     color: var(--text-primary-dark, #e2e8f0);
   }
   

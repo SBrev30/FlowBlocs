@@ -91,7 +91,7 @@ const PropertyDisplay: React.FC<PropertyDisplayProps> = ({
   return (
     <div className="property-display full">
       <div className="page-header">
-        <h3 className="page-title">
+        <h3 className="property-page-title">
           {page.icon && <span className="page-icon">{page.icon}</span>}
           {page.title}
         </h3>
