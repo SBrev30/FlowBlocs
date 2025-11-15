@@ -1,156 +1,213 @@
-# FlowBlocs - Web App
+# FlowBlocs
 
-Transform your Notion databases into interactive visual canvases.
+**Transform your Notion databases into interactive visual canvases**
+
+FlowBlocs bridges the gap between Notion's structured data and visual thinking by creating infinite canvas workspaces where you can spatially organize database items as interactive nodes.
+
+## ✨ Features
+
+### 🎯 Core Functionality
+- **Notion Integration** - Secure OAuth authentication with your Notion workspace
+- **Database Visualization** - Browse and visualize any shared Notion database
+- **Drag & Drop Interface** - Drag database items from sidebar onto infinite canvas
+- **Rich Property Display** - View formatted text, dates, people, and custom properties
+- **Infinite Canvas** - Pan, zoom, and arrange content spatially with ReactFlow
+- **Responsive Design** - Clean interface that works across devices
+
+### 🛠️ Technical Features
+- **TypeScript** - Full type safety throughout the application
+- **Modern React** - Built with React 18 and modern patterns
+- **Supabase Backend** - Serverless OAuth handling via Edge Functions
+- **Tailwind Styling** - Consistent, theme-aware design system
+- **State Management** - Zustand for efficient client state
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ installed
-- Notion account
-- Supabase account (for OAuth backend)
+- Node.js 18+
+- Notion workspace
+- Supabase project (for OAuth)
 
-### Local Development
-
-1. **Clone the repository**
+### 1. Clone & Install
 ```bash
 git clone https://github.com/SBrev30/FlowBlocs.git
 cd FlowBlocs
-git checkout web-app
-```
-
-2. **Install dependencies**
-```bash
 npm install
 ```
 
-3. **Configure environment**
+### 2. Environment Setup
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your values:
+Configure your `.env`:
 ```env
 VITE_NOTION_CLIENT_ID=your_notion_client_id
 VITE_BACKEND_TOKEN_ENDPOINT=https://your-project.supabase.co/functions/v1/notion-oauth
 VITE_REDIRECT_URI=http://localhost:5173/auth/callback
 ```
 
-4. **Start development server**
+### 3. Start Development
 ```bash
 npm run dev
 ```
 
-5. **Open browser**
-```
-http://localhost:5173
-```
+Open http://localhost:5173
 
-## 🔧 Notion Integration Setup
+## 🔧 Setup Guide
 
-### 1. Create Notion Integration
+### Notion Integration
 
-1. Go to https://www.notion.so/my-integrations
-2. Click **"+ New integration"**
-3. Configure:
-   - **Name**: FlowBlocs
-   - **Type**: Internal (for development)
-   - **Capabilities**: Read content, Update content, Insert content, Read user
+1. **Create Integration** at https://www.notion.so/my-integrations
+2. **Configure settings:**
+   - Name: FlowBlocs
+   - Type: Internal (development) / Public (production)
+   - Capabilities: Read content, Update content, Insert content, Read user info
 
-4. Save your credentials:
-   - **Client ID**: Copy to `.env`
-   - **Client Secret**: Save securely (for Supabase)
+3. **Add OAuth Redirect:**
+   - Development: `http://localhost:5173/auth/callback`
+   - Production: `https://your-domain.com/auth/callback`
 
-### 2. Configure OAuth Redirect URI
-
-In your Notion integration settings, add:
-
-**Development:**
-```
-http://localhost:5173/auth/callback
-```
-
-**Production:**
-```
-https://flowblocs.yourdomain.com/auth/callback
-```
-
-### 3. Share Databases
+### Database Sharing
 
 For databases to appear in FlowBlocs:
 1. Open database in Notion
-2. Click **"•••"** → **"Connections"**
-3. Add your FlowBlocs integration
+2. Click **"•••"** → **"Add connections"**
+3. Select your FlowBlocs integration
 
-## 📦 Build for Production
+### Supabase Edge Function
 
-```bash
-npm run build
+Deploy the OAuth handler:
+```sql
+-- Required environment variables in Supabase
+NOTION_CLIENT_ID=your_client_id
+NOTION_CLIENT_SECRET=your_client_secret
 ```
 
-Output will be in `dist/` folder.
+## 📦 Tech Stack
+
+- **Frontend:** React 18 + TypeScript + Vite
+- **Styling:** Tailwind CSS + CSS Variables
+- **Canvas:** ReactFlow for infinite canvas
+- **State:** Zustand for state management
+- **Backend:** Supabase Edge Functions
+- **Authentication:** Notion OAuth 2.0
+- **Icons:** Lucide React + React Icons
+
+## 🎨 Architecture
+
+```
+┌─────────────────────┬─────────────────────┐
+│                     │                     │
+│      Sidebar        │    Canvas Area      │
+│                     │                     │
+│ • Auth Panel        │ • ReactFlow Canvas  │
+│ • Database List     │ • Draggable Nodes   │
+│ • Property Display  │ • Pan/Zoom Controls │
+│ • Search/Filter     │ • Infinite Space    │
+│                     │                     │
+└─────────────────────┴─────────────────────┘
+```
+
+**Data Flow:**
+1. User authenticates → Supabase Edge Function handles OAuth
+2. Fetch databases → Notion API via authenticated requests
+3. Display in sidebar → Expandable lists with properties
+4. Drag to canvas → Creates interactive nodes with content
+5. Canvas state → Auto-saved to localStorage
 
 ## 🚀 Deployment
 
 ### Vercel (Recommended)
-
-1. Push to GitHub
-2. Connect repository to Vercel
-3. Configure environment variables in Vercel dashboard
-4. Deploy!
+1. Connect GitHub repository
+2. Add environment variables
+3. Deploy automatically
 
 ### Netlify
-
-1. Build command: `npm run build`
-2. Publish directory: `dist`
-3. Add environment variables in Netlify dashboard
-
-## 🔐 Supabase Edge Function
-
-Your Supabase Edge Function should be already set up at:
-```
-https://your-project.supabase.co/functions/v1/notion-oauth
+```bash
+npm run build
+# Deploy dist/ folder
 ```
 
-Make sure:
-- `NOTION_CLIENT_ID` is set in Supabase environment
-- `NOTION_CLIENT_SECRET` is set in Supabase environment
-- CORS allows your domain
+### Docker
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+EXPOSE 5173
+CMD ["npm", "run", "preview"]
+```
 
-## 📝 Environment Variables
+## 🧪 Development
 
-| Variable | Description | Example |
-|----------|-------------|----------|
-| `VITE_NOTION_CLIENT_ID` | Notion OAuth Client ID | `a1b2c3d4-5678...` |
-| `VITE_BACKEND_TOKEN_ENDPOINT` | Supabase Edge Function URL | `https://xxx.supabase.co/functions/v1/notion-oauth` |
-| `VITE_REDIRECT_URI` | OAuth callback URL | `http://localhost:5173/auth/callback` |
+### Available Scripts
+```bash
+npm run dev         # Start development server
+npm run build       # Build for production
+npm run preview     # Preview production build
+npm run lint        # Run ESLint
+npm run typecheck   # TypeScript type checking
+```
+
+### Project Structure
+```
+src/
+├── components/          # React components
+│   ├── Canvas/         # Canvas and node components
+│   ├── Sidebar/        # Sidebar and auth components
+│   └── PropertyDisplay.tsx
+├── lib/                # Utilities and API
+├── store/              # Zustand state management
+├── styles/             # CSS and theme files
+└── App.tsx             # Main application
+```
 
 ## 🐛 Troubleshooting
 
-### "Invalid redirect URI" error
-- Verify redirect URI in Notion integration matches `.env`
-- Check for trailing slashes
-- Ensure protocol matches (http vs https)
+**"Invalid redirect URI"**
+- Verify redirect URI in Notion integration matches your environment
+- Ensure protocol (http/https) matches
 
-### "No databases found"
-- Share at least one database with your integration in Notion
-- Click refresh in sidebar
-- Check Notion integration has correct capabilities
+**"No databases found"**
+- Share at least one database with your integration
+- Check integration capabilities are enabled
+- Refresh the database list
 
-### CORS errors
-- Update Supabase Edge Function CORS to allow your domain
-- Check `VITE_BACKEND_TOKEN_ENDPOINT` is correct
+**CORS errors**
+- Update Supabase Edge Function to allow your domain
+- Verify `VITE_BACKEND_TOKEN_ENDPOINT` URL is correct
 
-## 📚 Documentation
+## 🔮 Roadmap
 
-See `/docs` folder for detailed documentation:
-- Architecture overview
-- API documentation
-- Development guide
+- [ ] **Inline Editing** - Edit content directly on canvas nodes
+- [ ] **Sync to Notion** - Save changes back to Notion databases
+- [ ] **Node States** - Expandable/collapsible views
+- [ ] **Connections** - Visual links between related items
+- [ ] **Layouts** - Auto-arrange with different algorithms
+- [ ] **Collaboration** - Real-time multi-user editing
+- [ ] **Export** - Save canvas as image or Notion page
 
 ## 🤝 Contributing
 
-Contributions welcome! Please open an issue first to discuss changes.
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open Pull Request
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+MIT License - see [LICENSE](LICENSE) for details.
+
+## 🙏 Acknowledgments
+
+- Built with [ReactFlow](https://reactflow.dev) for canvas functionality
+- Powered by [Notion API](https://developers.notion.com) for data access
+- Hosted on [Supabase](https://supabase.io) for serverless backend
+
+---
+
+**Transform your structured data into spatial thinking** 🧠✨
