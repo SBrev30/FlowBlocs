@@ -60,7 +60,7 @@ export class NotionSidebarService {
   }
 
   async fetchDatabases(forceRefresh: boolean = false): Promise<NotionDatabase[]> {
-    console.log('📚 Fetching databases...');
+    console.log('📚 Fetching databases...', { forceRefresh });
 
     if (!forceRefresh) {
       const { data: cached, error } = await supabase
@@ -75,53 +75,78 @@ export class NotionSidebarService {
           console.log('✅ Using cached databases:', cached.length);
           return cached.map((db: any) => ({
             id: db.id,
-            title: db.title,
+            title: db.title || 'Untitled Database',
             icon: db.icon,
-            url: db.url,
+            url: db.url || `https://notion.so/${db.id.replace(/-/g, '')}`,
             pageCount: db.page_count,
             lastSynced: db.last_synced,
           }));
+        } else {
+          console.log('⏰ Cache is stale, fetching fresh data');
         }
+      } else {
+        console.log('🔍 No cached data found or error:', error);
       }
     }
 
     console.log('🔄 Fetching fresh databases from Notion API...');
-    const databases = await NotionAPI.searchDatabases();
+    
+    try {
+      const databases = await NotionAPI.searchDatabases();
+      console.log('📚 Raw databases from API:', databases.length);
 
-    for (const db of databases) {
-      const { error } = await supabase
-        .from('notion_databases_cache')
-        .upsert({
-          id: db.id,
-          title: db.title,
-          icon: db.icon,
-          url: `https://notion.so/${db.id.replace(/-/g, '')}`,
-          properties_schema: {},
-          page_count: 0,
-          last_synced: new Date().toISOString(),
-        }, {
-          onConflict: 'id'
-        });
+      // Validate databases before caching
+      const validDatabases = databases.filter(db => {
+        const isValid = !!(db.id && db.title && db.title.trim());
+        if (!isValid) {
+          console.warn('⚠️ Invalid database found:', db);
+        }
+        return isValid;
+      });
 
-      if (error) {
-        console.error('Failed to cache database:', error);
+      console.log('✅ Valid databases:', validDatabases.length);
+
+      // Cache the databases
+      for (const db of validDatabases) {
+        const { error } = await supabase
+          .from('notion_databases_cache')
+          .upsert({
+            id: db.id,
+            title: db.title,
+            icon: db.icon,
+            url: `https://notion.so/${db.id.replace(/-/g, '')}`,
+            properties_schema: {},
+            page_count: 0,
+            last_synced: new Date().toISOString(),
+          }, {
+            onConflict: 'id'
+          });
+
+        if (error) {
+          console.error('Failed to cache database:', error);
+        } else {
+          console.log(`💾 Cached database: ${db.title}`);
+        }
       }
-    }
 
-    console.log('✅ Databases cached:', databases.length);
-    return databases.map(db => ({
-      id: db.id,
-      title: db.title,
-      icon: db.icon,
-      url: `https://notion.so/${db.id.replace(/-/g, '')}`,
-    }));
+      return validDatabases.map(db => ({
+        id: db.id,
+        title: db.title,
+        icon: db.icon,
+        url: `https://notion.so/${db.id.replace(/-/g, '')}`,
+      }));
+
+    } catch (error) {
+      console.error('❌ Failed to fetch databases:', error);
+      throw error;
+    }
   }
 
   async fetchDatabasePages(
     databaseId: string,
     forceRefresh: boolean = false
   ): Promise<NotionPage[]> {
-    console.log('📄 Fetching pages for database:', databaseId);
+    console.log('📄 Fetching pages for database:', databaseId, { forceRefresh });
 
     if (!forceRefresh) {
       const { data: cached, error } = await supabase
@@ -137,79 +162,156 @@ export class NotionSidebarService {
           console.log('✅ Using cached pages:', cached.length);
           return cached.map((page: any) => ({
             id: page.id,
-            title: page.title,
+            title: page.title || 'Untitled Page',
             icon: page.icon,
-            url: page.url,
-            properties: page.properties,
+            url: page.url || `https://notion.so/${page.id.replace(/-/g, '')}`,
+            properties: page.properties || {},
             databaseId: page.database_id,
             hasChildren: page.has_children,
             createdTime: page.created_time,
             lastEditedTime: page.last_edited_time,
           }));
+        } else {
+          console.log('⏰ Page cache is stale, fetching fresh data');
         }
+      } else {
+        console.log('🔍 No cached pages found or error:', error);
       }
     }
 
     console.log('🔄 Fetching fresh pages from Notion API...');
-    const response = await NotionAPI.queryDatabase(databaseId);
-    const pages = response.results;
+    
+    try {
+      const response = await NotionAPI.queryDatabase(databaseId);
+      const pages = response.results;
 
-    console.log(`📄 Retrieved ${pages.length} pages from database ${databaseId}`);
+      console.log(`📄 Raw pages from API: ${pages.length}`);
 
-    for (const page of pages) {
-      if (!page.title || page.title === 'Untitled') {
-        console.warn(`⚠️ Page ${page.id} has no valid title, checking properties:`, Object.keys(page.properties || {}));
+      // Validate and process pages
+      const validPages = [];
+      for (const page of pages) {
+        // Debug each page
+        if (!page.title || page.title.trim() === '' || page.title === 'Untitled' || page.title === 'Untitled Page') {
+          console.warn(`⚠️ Page ${page.id} has invalid title: "${page.title}"`);
+          NotionAPI.debugPageProperties(page);
+          
+          // Try to extract a better title
+          const betterTitle = this.extractBetterTitle(page);
+          if (betterTitle && betterTitle !== 'Untitled Page') {
+            page.title = betterTitle;
+            console.log(`✅ Fixed title for page ${page.id}: "${betterTitle}"`);
+          }
+        }
+
+        // Only include pages with valid titles
+        if (page.title && page.title.trim() && page.title !== 'Untitled') {
+          validPages.push(page);
+        } else {
+          console.warn(`❌ Skipping page ${page.id} - no valid title found`);
+        }
       }
 
-      const hasChildren = await NotionAPI.checkPageHasChildren(page.id);
+      console.log(`✅ Valid pages: ${validPages.length} out of ${pages.length}`);
 
-      const pageData = {
-        id: page.id,
-        database_id: databaseId,
-        title: page.title || 'Untitled Page',
-        icon: page.icon || null,
-        url: page.url || `https://notion.so/${page.id.replace(/-/g, '')}`,
-        properties: page.properties || {},
-        created_time: new Date().toISOString(),
-        last_edited_time: new Date().toISOString(),
-        has_children: hasChildren,
-        last_synced: new Date().toISOString(),
-      };
+      // Check for children and cache pages
+      for (const page of validPages) {
+        try {
+          const hasChildren = await NotionAPI.checkPageHasChildren(page.id);
 
-      console.log(`✅ Caching page: ${pageData.title} (${page.id})`);
+          const pageData = {
+            id: page.id,
+            database_id: databaseId,
+            title: page.title,
+            icon: page.icon || null,
+            url: page.url || `https://notion.so/${page.id.replace(/-/g, '')}`,
+            properties: page.properties || {},
+            created_time: new Date().toISOString(),
+            last_edited_time: new Date().toISOString(),
+            has_children: hasChildren,
+            last_synced: new Date().toISOString(),
+          };
 
-      const { error } = await supabase
-        .from('notion_page_properties_cache')
-        .upsert(pageData, {
-          onConflict: 'id'
-        });
+          console.log(`💾 Caching page: ${pageData.title} (${page.id})`);
 
-      if (error) {
-        console.error('Failed to cache page:', error);
+          const { error } = await supabase
+            .from('notion_page_properties_cache')
+            .upsert(pageData, {
+              onConflict: 'id'
+            });
+
+          if (error) {
+            console.error('Failed to cache page:', error);
+          }
+        } catch (error) {
+          console.error(`Failed to process page ${page.id}:`, error);
+        }
+      }
+
+      // Update database page count
+      await supabase
+        .from('notion_databases_cache')
+        .update({ page_count: validPages.length })
+        .eq('id', databaseId);
+
+      console.log('✅ Pages cached:', validPages.length);
+      
+      const mappedPages = validPages.map(page => {
+        const mappedPage: NotionPage = {
+          id: page.id,
+          title: page.title,
+          icon: page.icon,
+          url: page.url || `https://notion.so/${page.id.replace(/-/g, '')}`,
+          properties: page.properties || {},
+          databaseId,
+          hasChildren: page.hasChildren,
+        };
+        console.log(`🗂️ Mapped page for UI: "${mappedPage.title}" (${mappedPage.id})`);
+        return mappedPage;
+      });
+
+      return mappedPages;
+
+    } catch (error) {
+      console.error('❌ Failed to fetch database pages:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Try to extract a better title from page properties
+   */
+  private extractBetterTitle(page: any): string | null {
+    if (!page.properties) return null;
+
+    // Look for any text-based properties that might serve as a title
+    const textProperties = Object.entries(page.properties).filter(([_, prop]: [string, any]) => {
+      return prop.type === 'rich_text' || prop.type === 'text';
+    });
+
+    for (const [propName, prop] of textProperties) {
+      const content = (prop as any)[prop.type];
+      if (content && Array.isArray(content) && content.length > 0 && content[0].plain_text) {
+        const text = content[0].plain_text.trim();
+        if (text && text.length > 0) {
+          console.log(`🔧 Found alternative title in "${propName}": "${text}"`);
+          return text;
+        }
       }
     }
 
-    await supabase
-      .from('notion_databases_cache')
-      .update({ page_count: pages.length })
-      .eq('id', databaseId);
-
-    console.log('✅ Pages cached:', pages.length);
-    const mappedPages = pages.map(page => {
-      const mappedPage: NotionPage = {
-        id: page.id,
-        title: page.title || 'Untitled Page',
-        icon: page.icon,
-        url: page.url || `https://notion.so/${page.id.replace(/-/g, '')}`,
-        properties: page.properties || {},
-        databaseId,
-        hasChildren: page.hasChildren,
-      };
-      console.log(`🗂️ Mapped page for UI: ${mappedPage.title}`);
-      return mappedPage;
+    // Look for select properties that might have meaningful values
+    const selectProperties = Object.entries(page.properties).filter(([_, prop]: [string, any]) => {
+      return prop.type === 'select' || prop.type === 'multi_select';
     });
 
-    return mappedPages;
+    for (const [propName, prop] of selectProperties) {
+      if (prop.type === 'select' && prop.select?.name) {
+        console.log(`🔧 Found title candidate in select "${propName}": "${prop.select.name}"`);
+        return `${prop.select.name} (${propName})`;
+      }
+    }
+
+    return null;
   }
 
   async fetchPageContent(
@@ -246,11 +348,13 @@ export class NotionSidebarService {
     const blocks = await NotionAPI.getPageBlocks(pageId);
     const parsedBlocks = this.parseBlocks(blocks);
 
+    // Clear old cached blocks
     await supabase
       .from('notion_blocks_cache')
       .delete()
       .eq('page_id', pageId);
 
+    // Cache new blocks
     for (let i = 0; i < parsedBlocks.length; i++) {
       const block = parsedBlocks[i];
       const { error } = await supabase
@@ -337,6 +441,8 @@ export class NotionSidebarService {
   }
 
   async searchDatabases(query: string): Promise<NotionDatabase[]> {
+    if (!query.trim()) return [];
+
     const { data, error } = await supabase
       .from('notion_databases_cache')
       .select('*')
@@ -350,7 +456,7 @@ export class NotionSidebarService {
 
     return (data || []).map((db: any) => ({
       id: db.id,
-      title: db.title,
+      title: db.title || 'Untitled Database',
       icon: db.icon,
       url: db.url,
       pageCount: db.page_count,
@@ -370,17 +476,24 @@ export function useNotionSidebar(accessToken: string | null) {
   );
 
   const loadDatabases = useCallback(async (forceRefresh: boolean = false) => {
-    if (!service) return;
+    if (!service) {
+      console.log('📚 No service available, skipping database load');
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
+      console.log('📚 Loading databases...', { forceRefresh });
       const dbs = await service.fetchDatabases(forceRefresh);
+      console.log('✅ Databases loaded:', dbs.length);
       setDatabases(dbs);
     } catch (err) {
-      console.error('Failed to load databases:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load databases');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load databases';
+      console.error('❌ Failed to load databases:', err);
+      setError(errorMessage);
+      setDatabases([]); // Clear databases on error
     } finally {
       setLoading(false);
     }
@@ -390,12 +503,29 @@ export function useNotionSidebar(accessToken: string | null) {
     databaseId: string,
     forceRefresh: boolean = false
   ): Promise<NotionPage[]> => {
-    if (!service) return [];
+    if (!service) {
+      console.log('📄 No service available, skipping pages load');
+      return [];
+    }
 
     try {
-      return await service.fetchDatabasePages(databaseId, forceRefresh);
+      console.log('📄 Loading pages for database:', databaseId);
+      const pages = await service.fetchDatabasePages(databaseId, forceRefresh);
+      console.log('✅ Pages loaded:', pages.length);
+      
+      // Filter out pages without valid titles for drag-and-drop
+      const validPages = pages.filter(page => {
+        const isValid = NotionAPI.isPageValidForDragAndDrop(page);
+        if (!isValid) {
+          console.warn(`⚠️ Filtering out invalid page: ${page.id} - "${page.title}"`);
+        }
+        return isValid;
+      });
+      
+      console.log(`✅ Valid pages for drag-and-drop: ${validPages.length} out of ${pages.length}`);
+      return validPages;
     } catch (err) {
-      console.error('Failed to load pages:', err);
+      console.error('❌ Failed to load pages:', err);
       throw err;
     }
   }, [service]);
