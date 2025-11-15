@@ -99,12 +99,24 @@ const NotionNode: React.FC<NodeProps<NotionNodeData>> = ({
 
   // Handle delete node
   const handleDeleteNode = useCallback((event: React.MouseEvent) => {
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    setDeletePopupPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.bottom + 8
-    });
-    setShowDeletePopup(true);
+    const nodeElement = (event.currentTarget as HTMLElement).closest('.flowblocs-node') as HTMLElement;
+    if (nodeElement) {
+      const rect = nodeElement.getBoundingClientRect();
+      const popupHeight = 180;
+      const spacing = 12;
+
+      let yPosition = rect.top - spacing;
+
+      if (yPosition < popupHeight + 20) {
+        yPosition = rect.bottom + spacing;
+      }
+
+      setDeletePopupPosition({
+        x: rect.left + rect.width / 2,
+        y: yPosition
+      });
+      setShowDeletePopup(true);
+    }
   }, []);
 
   const confirmDelete = useCallback(() => {

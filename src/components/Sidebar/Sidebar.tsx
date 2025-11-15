@@ -99,10 +99,6 @@ const Sidebar = ({ onDragStart }: SidebarProps) => {
     console.log('🗑️ Sidebar: Confirming canvas clear');
     clearCanvas();
     setShowClearConfirm(false);
-    // Also trigger the global window function to ensure CanvasContainer updates
-    if ((window as any).clearCanvas) {
-      (window as any).clearCanvas();
-    }
   };
 
   const handleToggleDatabase = async (databaseId: string) => {

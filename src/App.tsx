@@ -10,8 +10,6 @@ import './styles/variables.css';
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCallback, setIsCallback] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [canvasNodeCount, setCanvasNodeCount] = useState(0);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -39,10 +37,6 @@ function App() {
     setIsCallback(false);
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-
   const handleDragStart = (page: NotionPage, databaseId: string) => {
     console.log('Drag started:', page.title, 'from database:', databaseId);
   };
@@ -67,17 +61,6 @@ function App() {
     }
   };
 
-  const handleClearCanvas = () => {
-    console.log('Clear canvas triggered from sidebar');
-    // Trigger the canvas to clear via the global function
-    if ((window as any).clearCanvas) {
-      (window as any).clearCanvas();
-    }
-  };
-
-  const handleNodeCountChange = (count: number) => {
-    setCanvasNodeCount(count);
-  };
 
   if (isLoading) {
     return (
@@ -99,16 +82,10 @@ function App() {
   return (
     <div className="flex h-screen">
       <Sidebar
-        isCollapsed={isSidebarCollapsed}
-        onToggle={toggleSidebar}
         onDragStart={handleDragStart}
-        onClearCanvas={handleClearCanvas}
-        canvasNodeCount={canvasNodeCount}
       />
-      <Canvas 
-        onDrop={handleDrop} 
-        onClearCanvas={() => {}} // This is now handled by the global function
-        onNodeCountChange={handleNodeCountChange}
+      <Canvas
+        onDrop={handleDrop}
       />
     </div>
   );
